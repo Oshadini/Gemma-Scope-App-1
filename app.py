@@ -1,5 +1,3 @@
-# streamlit_app.py
-
 import streamlit as st
 
 # Initialize session state for UI toggle and chat histories
@@ -25,40 +23,49 @@ st.sidebar.button("Demo", key="demo_button")  # Placeholder for the demo buttons
 # Main interface
 st.title("Steer Models")
 
-# CSS to apply separate background colors to each section
+# CSS to create full-height background colors for both sections
 st.markdown("""
     <style>
-        .main-container {
+        .container {
             display: flex;
             width: 100%;
+            height: 100vh; /* Full screen height */
+            margin: 0;
+            padding: 0;
         }
-        .left-column, .right-column {
+        .left-pane {
             flex: 1;
-            min-height: 100vh;
+            background-color: #f9f9f9; /* Light gray for NORMAL */
             padding: 20px;
             box-sizing: border-box;
         }
-        .left-column {
-            background-color: #f9f9f9; /* Light gray for Normal section */
+        .right-pane {
+            flex: 1;
+            background-color: #eaf7ff; /* Light blue for STEERED */
+            padding: 20px;
+            box-sizing: border-box;
         }
-        .right-column {
-            background-color: #eaf7ff; /* Light blue for Steered section */
-        }
-        .chat-box {
-            background-color: rgba(0, 0, 0, 0.05); /* Slightly darker box for responses */
+        .response-box {
+            background-color: rgba(173, 216, 230, 0.5); /* Light blue for NORMAL chat */
             border-radius: 10px;
             padding: 10px;
-            margin: 5px 0;
+            margin: 10px 0;
+        }
+        .response-box-steered {
+            background-color: rgba(144, 238, 144, 0.5); /* Light green for STEERED chat */
+            border-radius: 10px;
+            padding: 10px;
+            margin: 10px 0;
         }
     </style>
 """, unsafe_allow_html=True)
 
 if st.session_state.features_mode == "default":
-    # Default UI with Normal and Steered Headers
-    st.markdown('<div class="main-container">', unsafe_allow_html=True)
-
+    # Full-width layout using CSS
+    st.markdown('<div class="container">', unsafe_allow_html=True)
+    
     # Left column for NORMAL
-    st.markdown('<div class="left-column">', unsafe_allow_html=True)
+    st.markdown('<div class="left-pane">', unsafe_allow_html=True)
     st.subheader("NORMAL")
     st.markdown(f"### Model: Normal {model}")
     st.markdown("""I'm the default, non-steered model.""")
@@ -68,14 +75,15 @@ if st.session_state.features_mode == "default":
     for chat in st.session_state.chat_history:
         st.markdown(f"👤: {chat['user_input']}", unsafe_allow_html=True)
         st.markdown(f"""
-            <div class="chat-box">
+            <div class="response-box">
                 {chat['normal_response']}
             </div>
         """, unsafe_allow_html=True)
+
     st.markdown('</div>', unsafe_allow_html=True)
 
     # Right column for STEERED
-    st.markdown('<div class="right-column">', unsafe_allow_html=True)
+    st.markdown('<div class="right-pane">', unsafe_allow_html=True)
     st.subheader("STEERED")
     st.markdown(f"### Model: Steered {model}")
     st.markdown("""Choose a demo, select a preset, or manually search and add features.""")
@@ -85,13 +93,13 @@ if st.session_state.features_mode == "default":
     for chat in st.session_state.chat_history:
         st.markdown(f"👤: {chat['user_input']}", unsafe_allow_html=True)
         st.markdown(f"""
-            <div class="chat-box" style="background-color: #d0f0d0;">
+            <div class="response-box-steered">
                 {chat['steered_response']}
             </div>
         """, unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)  # Close container
 
     # Unified Chat Input
     st.markdown("### Send a Message")
@@ -109,7 +117,7 @@ if st.session_state.features_mode == "default":
                 "steered_response": steered_response,
             })
 
-# The "search" and "selected" modes remain unchanged
+# "search" and "selected" modes remain unchanged
 elif st.session_state.features_mode == "search":
     st.subheader("Search for Features")
     # Remaining implementation for 'search' mode...
