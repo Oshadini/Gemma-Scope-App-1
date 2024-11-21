@@ -28,62 +28,70 @@ st.title("Steer Models")
 # CSS to apply separate background colors to each section
 st.markdown("""
     <style>
+        .main-container {
+            display: flex;
+            width: 100%;
+        }
+        .left-column, .right-column {
+            flex: 1;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
         .left-column {
             background-color: #f9f9f9; /* Light gray for Normal section */
-            padding: 20px;
-            border-radius: 10px;
         }
         .right-column {
             background-color: #eaf7ff; /* Light blue for Steered section */
-            padding: 20px;
-            border-radius: 10px;
         }
-        .full-width {
-            margin: 0 auto;
-            width: 100%;
+        .chat-box {
+            background-color: rgba(0, 0, 0, 0.05); /* Slightly darker box for responses */
+            border-radius: 10px;
+            padding: 10px;
+            margin: 5px 0;
         }
     </style>
 """, unsafe_allow_html=True)
 
 if st.session_state.features_mode == "default":
     # Default UI with Normal and Steered Headers
-    col1, col2 = st.columns([1, 1], gap="medium")
+    st.markdown('<div class="main-container">', unsafe_allow_html=True)
 
-    with col1:
-        st.markdown('<div class="left-column">', unsafe_allow_html=True)
-        st.subheader("NORMAL")
-        st.markdown(f"### Model: Normal {model}")
-        st.markdown("""I'm the default, non-steered model.""")
+    # Left column for NORMAL
+    st.markdown('<div class="left-column">', unsafe_allow_html=True)
+    st.subheader("NORMAL")
+    st.markdown(f"### Model: Normal {model}")
+    st.markdown("""I'm the default, non-steered model.""")
 
-        # Normal Chat History
-        with st.container():
-            st.markdown("#### Chat - NORMAL")
-            for chat in st.session_state.chat_history:
-                st.markdown(f"👤: {chat['user_input']}", unsafe_allow_html=True)
-                st.markdown(f"""
-                    <div style="background-color: lightblue; border-radius: 10px; padding: 10px; margin: 5px 0;">
-                        {chat['normal_response']}
-                    </div>
-                """, unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+    # Normal Chat History
+    st.markdown("#### Chat - NORMAL")
+    for chat in st.session_state.chat_history:
+        st.markdown(f"👤: {chat['user_input']}", unsafe_allow_html=True)
+        st.markdown(f"""
+            <div class="chat-box">
+                {chat['normal_response']}
+            </div>
+        """, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    with col2:
-        st.markdown('<div class="right-column">', unsafe_allow_html=True)
-        st.subheader("STEERED")
-        st.markdown(f"### Model: Steered {model}")
-        st.markdown("""Choose a demo, select a preset, or manually search and add features.""")
+    # Right column for STEERED
+    st.markdown('<div class="right-column">', unsafe_allow_html=True)
+    st.subheader("STEERED")
+    st.markdown(f"### Model: Steered {model}")
+    st.markdown("""Choose a demo, select a preset, or manually search and add features.""")
 
-        # Steered Chat History
-        with st.container():
-            st.markdown("#### Chat - STEERED")
-            for chat in st.session_state.chat_history:
-                st.markdown(f"👤: {chat['user_input']}", unsafe_allow_html=True)
-                st.markdown(f"""
-                    <div style="background-color: lightgreen; border-radius: 10px; padding: 10px; margin: 5px 0;">
-                        {chat['steered_response']}
-                    </div>
-                """, unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+    # Steered Chat History
+    st.markdown("#### Chat - STEERED")
+    for chat in st.session_state.chat_history:
+        st.markdown(f"👤: {chat['user_input']}", unsafe_allow_html=True)
+        st.markdown(f"""
+            <div class="chat-box" style="background-color: #d0f0d0;">
+                {chat['steered_response']}
+            </div>
+        """, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)
 
     # Unified Chat Input
     st.markdown("### Send a Message")
