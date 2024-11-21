@@ -117,6 +117,20 @@ elif st.session_state.features_mode == "selected":
         tokens = st.slider("Tokens", 0, 100, 32, key="tokens_selected")
         temp = st.slider("Temperature", 0.0, 1.0, 0.5, key="temp_selected")
     with col2:
-        freq_penalty = st.slider("Frequency Penalty", 0, 10, 2, key="freq_penalty_
+        freq_penalty = st.slider("Frequency Penalty", 0, 10, 2, key="freq_penalty_selected")
+        manual_seed = st.slider("Manual Seed", 0, 50, 16, key="manual_seed_selected")
+    with col3:
+        strength = st.slider("Strength Multiple", 1, 10, 4, key="strength_selected")
+        random_seed = st.checkbox("Random Seed", key="random_seed_selected")
+
+    st.button("Reset Settings", on_click=lambda: st.session_state.update({
+        "tokens_selected": 32,
+        "temp_selected": 0.5,
+        "freq_penalty_selected": 2,
+        "manual_seed_selected": 16,
+        "strength_selected": 4,
+        "random_seed_selected": False,
+    }))
+
 
 
