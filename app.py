@@ -6,7 +6,7 @@ import streamlit as st
 if "features_mode" not in st.session_state:
     st.session_state.features_mode = "default"  # Modes: 'default', 'search', 'selected'
 if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []  # Combined chat history for both Normal and Steered models
+    st.session_state.chat_history = []  # Unified chat history for single input, split by Normal and Steered responses
 
 # Functions to toggle modes
 def set_mode(mode):
@@ -26,28 +26,43 @@ st.sidebar.button("Demo", key="demo_button")  # Placeholder for the demo buttons
 st.title("Steer Models")
 
 if st.session_state.features_mode == "default":
-    # Default UI
-    st.subheader("Chat Interface")
-    st.markdown("""
-    Send a message, and receive responses from both the Normal and Steered models below.
-    """)
+    # Default UI with Normal and Steered Headers
+    col1, col2 = st.columns(2)
 
-    # Display chat history
-    st.markdown("#### Chat History")
-    for chat in st.session_state.chat_history:
-        st.write(f"👤: {chat['user_input']}")
-        st.write(f"🤖 **Normal**: {chat['normal_response']}")
-        st.write(f"🤖 **Steered**: {chat['steered_response']}")
+    with col1:
+        st.subheader("NORMAL")
+        st.markdown(f"### Model: Normal {model}")
+        st.markdown("""I'm the default, non-steered model.""")
 
-    # Single input for user message
+        # Normal Chat History
+        with st.container():
+            st.markdown("#### Chat - NORMAL")
+            for chat in st.session_state.chat_history:
+                st.write(f"👤: {chat['user_input']}")
+                st.write(f"🤖 **Normal**: {chat['normal_response']}")
+
+    with col2:
+        st.subheader("STEERED")
+        st.markdown(f"### Model: Steered {model}")
+        st.markdown("""Choose a demo, select a preset, or manually search and add features.""")
+
+        # Steered Chat History
+        with st.container():
+            st.markdown("#### Chat - STEERED")
+            for chat in st.session_state.chat_history:
+                st.write(f"👤: {chat['user_input']}")
+                st.write(f"🤖 **Steered**: {chat['steered_response']}")
+
+    # Unified Chat Input
+    st.markdown("### Send a Message")
     user_input = st.text_input("Send a message to both models:", key="user_input")
     if st.button("Send", key="send"):
         if user_input:
-            # Generate mock responses for both models (replace with actual API/model calls)
-            normal_response = f"[NORMAL] Echo: {user_input}"
-            steered_response = f"[STEERED] Echo: {user_input}"
+            # Generate mock responses for Normal and Steered models
+            normal_response = f"[NORMAL] Echo: {user_input}"  # Replace with actual Normal model response
+            steered_response = f"[STEERED] Echo: {user_input}"  # Replace with actual Steered model response
 
-            # Append responses to chat history
+            # Append to chat history
             st.session_state.chat_history.append({
                 "user_input": user_input,
                 "normal_response": normal_response,
@@ -102,18 +117,6 @@ elif st.session_state.features_mode == "selected":
         tokens = st.slider("Tokens", 0, 100, 32, key="tokens_selected")
         temp = st.slider("Temperature", 0.0, 1.0, 0.5, key="temp_selected")
     with col2:
-        freq_penalty = st.slider("Frequency Penalty", 0, 10, 2, key="freq_penalty_selected")
-        manual_seed = st.slider("Manual Seed", 0, 50, 16, key="manual_seed_selected")
-    with col3:
-        strength = st.slider("Strength Multiple", 1, 10, 4, key="strength_selected")
-        random_seed = st.checkbox("Random Seed", key="random_seed_selected")
+        freq_penalty = st.slider("Frequency Penalty", 0, 10, 2, key="freq_penalty_
 
-    st.button("Reset Settings", on_click=lambda: st.session_state.update({
-        "tokens_selected": 32,
-        "temp_selected": 0.5,
-        "freq_penalty_selected": 2,
-        "manual_seed_selected": 16,
-        "strength_selected": 4,
-        "random_seed_selected": False,
-    }))
 
