@@ -2,13 +2,11 @@
 
 import streamlit as st
 
-# Initial session state for UI toggle and chat histories
+# Initialize session state for UI toggle and chat histories
 if "features_mode" not in st.session_state:
-    st.session_state.features_mode = "default"  # 'default', 'search', 'selected'
-if "normal_chat" not in st.session_state:
-    st.session_state.normal_chat = []  # Chat history for Normal mode
-if "steered_chat" not in st.session_state:
-    st.session_state.steered_chat = []  # Chat history for Steered mode
+    st.session_state.features_mode = "default"  # Modes: 'default', 'search', 'selected'
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []  # Combined chat history for both Normal and Steered models
 
 # Functions to toggle modes
 def set_mode(mode):
@@ -29,57 +27,32 @@ st.title("Steer Models")
 
 if st.session_state.features_mode == "default":
     # Default UI
-    col1, col2 = st.columns(2)
+    st.subheader("Chat Interface")
+    st.markdown("""
+    Send a message, and receive responses from both the Normal and Steered models below.
+    """)
 
-    with col1:
-        st.subheader("NORMAL")
-        st.markdown("""
-        ### Hey, I'm normal gemma-2-9b-it!
-        I'm the default, non-steered model.
-        """)
+    # Display chat history
+    st.markdown("#### Chat History")
+    for chat in st.session_state.chat_history:
+        st.write(f"👤: {chat['user_input']}")
+        st.write(f"🤖 **Normal**: {chat['normal_response']}")
+        st.write(f"🤖 **Steered**: {chat['steered_response']}")
 
-        # Normal Chat UI
-        with st.container():
-            st.markdown("#### Chat - NORMAL")
-            # Display chat history for NORMAL
-            for msg in st.session_state.normal_chat:
-                st.write(f"👤: {msg['user']}")
-                st.write(f"🤖: {msg['response']}")
+    # Single input for user message
+    user_input = st.text_input("Send a message to both models:", key="user_input")
+    if st.button("Send", key="send"):
+        if user_input:
+            # Generate mock responses for both models (replace with actual API/model calls)
+            normal_response = f"[NORMAL] Echo: {user_input}"
+            steered_response = f"[STEERED] Echo: {user_input}"
 
-            # Input for NORMAL chat
-            normal_input = st.text_input("Send a message to NORMAL model:", key="normal_input")
-            if st.button("Send (Normal)", key="send_normal"):
-                if normal_input:
-                    # Mock response (replace with actual model call)
-                    normal_response = f"[NORMAL] Echo: {normal_input}"
-                    st.session_state.normal_chat.append({"user": normal_input, "response": normal_response})
-
-    with col2:
-        st.subheader("STEERED")
-        st.markdown("""
-        ### Hey, I'm steered gemma-2-9b-it!
-        Choose a demo, select a preset, or manually search and add features.
-        """)
-
-        # Steered Chat UI
-        with st.container():
-            st.markdown("#### Chat - STEERED")
-            # Display chat history for STEERED
-            for msg in st.session_state.steered_chat:
-                st.write(f"👤: {msg['user']}")
-                st.write(f"🤖: {msg['response']}")
-
-            # Input for STEERED chat
-            steered_input = st.text_input("Send a message to STEERED model:", key="steered_input")
-            if st.button("Send (Steered)", key="send_steered"):
-                if steered_input:
-                    # Mock response (replace with actual model call)
-                    steered_response = f"[STEERED] Echo: {steered_input}"
-                    st.session_state.steered_chat.append({"user": steered_input, "response": steered_response})
-
-    # Button to Add Features
-    if st.button("Search for Features"):
-        set_mode("search")
+            # Append responses to chat history
+            st.session_state.chat_history.append({
+                "user_input": user_input,
+                "normal_response": normal_response,
+                "steered_response": steered_response,
+            })
 
 elif st.session_state.features_mode == "search":
     # Features Mode UI - Search for Features
@@ -113,6 +86,7 @@ elif st.session_state.features_mode == "search":
         "strength": 4,
         "random_seed": False,
     }))
+
 elif st.session_state.features_mode == "selected":
     # Features Mode UI - Selected Features
     st.subheader("Selected Features")
