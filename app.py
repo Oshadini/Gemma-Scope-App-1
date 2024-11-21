@@ -25,6 +25,21 @@ st.sidebar.button("Demo", key="demo_button")  # Placeholder for the demo buttons
 # Main interface
 st.title("Steer Models")
 
+# Define CSS styles for colored boxes
+def format_response(response, role):
+    """Format responses with colored boxes for Normal and Steered."""
+    color = "lightblue" if role == "normal" else "lightgreen"
+    return f"""
+        <div style="
+            background-color: {color};
+            border-radius: 10px;
+            padding: 10px;
+            margin: 5px 0;
+        ">
+            {response}
+        </div>
+    """
+
 if st.session_state.features_mode == "default":
     # Default UI with Normal and Steered Headers
     col1, col2 = st.columns(2)
@@ -38,8 +53,8 @@ if st.session_state.features_mode == "default":
         with st.container():
             st.markdown("#### Chat - NORMAL")
             for chat in st.session_state.chat_history:
-                st.write(f"👤: {chat['user_input']}")
-                st.write(f"🤖 **Normal**: {chat['normal_response']}")
+                st.markdown(f"👤: {chat['user_input']}", unsafe_allow_html=True)
+                st.markdown(format_response(chat['normal_response'], "normal"), unsafe_allow_html=True)
 
     with col2:
         st.subheader("STEERED")
@@ -50,8 +65,8 @@ if st.session_state.features_mode == "default":
         with st.container():
             st.markdown("#### Chat - STEERED")
             for chat in st.session_state.chat_history:
-                st.write(f"👤: {chat['user_input']}")
-                st.write(f"🤖 **Steered**: {chat['steered_response']}")
+                st.markdown(f"👤: {chat['user_input']}", unsafe_allow_html=True)
+                st.markdown(format_response(chat['steered_response'], "steered"), unsafe_allow_html=True)
 
     # Unified Chat Input
     st.markdown("### Send a Message")
