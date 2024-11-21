@@ -2,9 +2,13 @@
 
 import streamlit as st
 
-# Initial session state for UI toggle
+# Initial session state for UI toggle and chat histories
 if "features_mode" not in st.session_state:
     st.session_state.features_mode = "default"  # 'default', 'search', 'selected'
+if "normal_chat" not in st.session_state:
+    st.session_state.normal_chat = []  # Chat history for Normal mode
+if "steered_chat" not in st.session_state:
+    st.session_state.steered_chat = []  # Chat history for Steered mode
 
 # Functions to toggle modes
 def set_mode(mode):
@@ -34,6 +38,22 @@ if st.session_state.features_mode == "default":
         I'm the default, non-steered model.
         """)
 
+        # Normal Chat UI
+        with st.container():
+            st.markdown("#### Chat - NORMAL")
+            # Display chat history for NORMAL
+            for msg in st.session_state.normal_chat:
+                st.write(f"👤: {msg['user']}")
+                st.write(f"🤖: {msg['response']}")
+
+            # Input for NORMAL chat
+            normal_input = st.text_input("Send a message to NORMAL model:", key="normal_input")
+            if st.button("Send (Normal)", key="send_normal"):
+                if normal_input:
+                    # Mock response (replace with actual model call)
+                    normal_response = f"[NORMAL] Echo: {normal_input}"
+                    st.session_state.normal_chat.append({"user": normal_input, "response": normal_response})
+
     with col2:
         st.subheader("STEERED")
         st.markdown("""
@@ -41,9 +61,26 @@ if st.session_state.features_mode == "default":
         Choose a demo, select a preset, or manually search and add features.
         """)
 
+        # Steered Chat UI
+        with st.container():
+            st.markdown("#### Chat - STEERED")
+            # Display chat history for STEERED
+            for msg in st.session_state.steered_chat:
+                st.write(f"👤: {msg['user']}")
+                st.write(f"🤖: {msg['response']}")
+
+            # Input for STEERED chat
+            steered_input = st.text_input("Send a message to STEERED model:", key="steered_input")
+            if st.button("Send (Steered)", key="send_steered"):
+                if steered_input:
+                    # Mock response (replace with actual model call)
+                    steered_response = f"[STEERED] Echo: {steered_input}"
+                    st.session_state.steered_chat.append({"user": steered_input, "response": steered_response})
+
     # Button to Add Features
     if st.button("Search for Features"):
         set_mode("search")
+
 elif st.session_state.features_mode == "search":
     # Features Mode UI - Search for Features
     st.subheader("Search for Features")
@@ -105,3 +142,4 @@ elif st.session_state.features_mode == "selected":
         "strength_selected": 4,
         "random_seed_selected": False,
     }))
+
