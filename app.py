@@ -1,3 +1,5 @@
+# streamlit_app.py
+
 import streamlit as st
 
 # Initialize session state for UI toggle and chat histories
@@ -20,86 +22,71 @@ model = st.sidebar.selectbox(
 st.sidebar.button("Back", on_click=lambda: set_mode("default"))  # Back Button
 st.sidebar.button("Demo", key="demo_button")  # Placeholder for the demo buttons
 
+# Define CSS styles for the sections
+normal_section_style = """
+    <div style="
+        background-color: #f0f8ff;  /* Very light blue */
+        border-radius: 10px;
+        padding: 20px;
+        margin: 10px;
+    ">
+"""
+steered_section_style = """
+    <div style="
+        background-color: #f5fff0;  /* Very light green */
+        border-radius: 10px;
+        padding: 20px;
+        margin: 10px;
+    ">
+"""
+chat_bubble_style_normal = """
+    <div style="
+        background-color: lightblue;
+        border-radius: 10px;
+        padding: 10px;
+        margin: 5px 0;
+    ">
+"""
+chat_bubble_style_steered = """
+    <div style="
+        background-color: lightgreen;
+        border-radius: 10px;
+        padding: 10px;
+        margin: 5px 0;
+    ">
+"""
+
 # Main interface
 st.title("Steer Models")
 
-# CSS to create full-height background colors for both sections
-st.markdown("""
-    <style>
-        .container {
-            display: flex;
-            width: 100%;
-            height: 100vh; /* Full screen height */
-            margin: 0;
-            padding: 0;
-        }
-        .left-pane {
-            flex: 1;
-            background-color: #f9f9f9; /* Light gray for NORMAL */
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        .right-pane {
-            flex: 1;
-            background-color: #eaf7ff; /* Light blue for STEERED */
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        .response-box {
-            background-color: rgba(173, 216, 230, 0.5); /* Light blue for NORMAL chat */
-            border-radius: 10px;
-            padding: 10px;
-            margin: 10px 0;
-        }
-        .response-box-steered {
-            background-color: rgba(144, 238, 144, 0.5); /* Light green for STEERED chat */
-            border-radius: 10px;
-            padding: 10px;
-            margin: 10px 0;
-        }
-    </style>
-""", unsafe_allow_html=True)
-
 if st.session_state.features_mode == "default":
-    # Full-width layout using CSS
-    st.markdown('<div class="container">', unsafe_allow_html=True)
-    
-    # Left column for NORMAL
-    st.markdown('<div class="left-pane">', unsafe_allow_html=True)
+    # Render Normal section
+    st.markdown(normal_section_style, unsafe_allow_html=True)
     st.subheader("NORMAL")
     st.markdown(f"### Model: Normal {model}")
     st.markdown("""I'm the default, non-steered model.""")
 
-    # Normal Chat History
+    # Chat history for NORMAL
     st.markdown("#### Chat - NORMAL")
     for chat in st.session_state.chat_history:
         st.markdown(f"👤: {chat['user_input']}", unsafe_allow_html=True)
-        st.markdown(f"""
-            <div class="response-box">
-                {chat['normal_response']}
-            </div>
-        """, unsafe_allow_html=True)
+        st.markdown(chat_bubble_style_normal + chat["normal_response"] + "</div>", unsafe_allow_html=True)
 
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)  # Close Normal section container
 
-    # Right column for STEERED
-    st.markdown('<div class="right-pane">', unsafe_allow_html=True)
+    # Render Steered section
+    st.markdown(steered_section_style, unsafe_allow_html=True)
     st.subheader("STEERED")
     st.markdown(f"### Model: Steered {model}")
     st.markdown("""Choose a demo, select a preset, or manually search and add features.""")
 
-    # Steered Chat History
+    # Chat history for STEERED
     st.markdown("#### Chat - STEERED")
     for chat in st.session_state.chat_history:
         st.markdown(f"👤: {chat['user_input']}", unsafe_allow_html=True)
-        st.markdown(f"""
-            <div class="response-box-steered">
-                {chat['steered_response']}
-            </div>
-        """, unsafe_allow_html=True)
+        st.markdown(chat_bubble_style_steered + chat["steered_response"] + "</div>", unsafe_allow_html=True)
 
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)  # Close container
+    st.markdown("</div>", unsafe_allow_html=True)  # Close Steered section container
 
     # Unified Chat Input
     st.markdown("### Send a Message")
@@ -117,13 +104,68 @@ if st.session_state.features_mode == "default":
                 "steered_response": steered_response,
             })
 
-# "search" and "selected" modes remain unchanged
 elif st.session_state.features_mode == "search":
+    # Features Mode UI - Search for Features
     st.subheader("Search for Features")
-    # Remaining implementation for 'search' mode...
+    feature_query = st.text_input("Search query (e.g., 'cats', 'blue', 'royal')", key="feature_query")
+
+    if feature_query:
+        st.markdown("### Results")
+        st.button("code snippets related to API data retrieval and error handling", key="feature_1", on_click=lambda: set_mode("selected"))
+        st.button("paths or connections related to a specific API or software library", key="feature_2", on_click=lambda: set_mode("selected"))
+        st.button("technical terms and references related to software", key="feature_3", on_click=lambda: set_mode("selected"))
+
+    st.markdown("### Advanced Settings")
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        tokens = st.slider("Tokens", 0, 100, 32, key="tokens")
+        temp = st.slider("Temperature", 0.0, 1.0, 0.5, key="temp")
+    with col2:
+        freq_penalty = st.slider("Frequency Penalty", 0, 10, 2, key="freq_penalty")
+        manual_seed = st.slider("Manual Seed", 0, 50, 16, key="manual_seed")
+    with col3:
+        strength = st.slider("Strength Multiple", 1, 10, 4, key="strength")
+        random_seed = st.checkbox("Random Seed", key="random_seed")
+
+    st.button("Reset Settings", on_click=lambda: st.session_state.update({
+        "tokens": 32,
+        "temp": 0.5,
+        "freq_penalty": 2,
+        "manual_seed": 16,
+        "strength": 4,
+        "random_seed": False,
+    }))
 
 elif st.session_state.features_mode == "selected":
+    # Features Mode UI - Selected Features
     st.subheader("Selected Features")
-    # Remaining implementation for 'selected' mode...
+    st.markdown("""
+    - **Feature**: Code snippets related to API data retrieval and error handling
+    - **Feature**: Paths or connections related to a specific API or software library
+    """)
+
+    st.markdown("### Adjustments for Selected Features")
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        tokens = st.slider("Tokens", 0, 100, 32, key="tokens_selected")
+        temp = st.slider("Temperature", 0.0, 1.0, 0.5, key="temp_selected")
+    with col2:
+        freq_penalty = st.slider("Frequency Penalty", 0, 10, 2, key="freq_penalty_selected")
+        manual_seed = st.slider("Manual Seed", 0, 50, 16, key="manual_seed_selected")
+    with col3:
+        strength = st.slider("Strength Multiple", 1, 10, 4, key="strength_selected")
+        random_seed = st.checkbox("Random Seed", key="random_seed_selected")
+
+    st.button("Reset Settings", on_click=lambda: st.session_state.update({
+        "tokens_selected": 32,
+        "temp_selected": 0.5,
+        "freq_penalty_selected": 2,
+        "manual_seed_selected": 16,
+        "strength_selected": 4,
+        "random_seed_selected": False,
+    }))
+
 
 
