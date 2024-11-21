@@ -22,71 +22,51 @@ model = st.sidebar.selectbox(
 st.sidebar.button("Back", on_click=lambda: set_mode("default"))  # Back Button
 st.sidebar.button("Demo", key="demo_button")  # Placeholder for the demo buttons
 
-# Define CSS styles for the sections
-normal_section_style = """
-    <div style="
-        background-color: #f0f8ff;  /* Very light blue */
-        border-radius: 10px;
-        padding: 20px;
-        margin: 10px;
-    ">
-"""
-steered_section_style = """
-    <div style="
-        background-color: #f5fff0;  /* Very light green */
-        border-radius: 10px;
-        padding: 20px;
-        margin: 10px;
-    ">
-"""
-chat_bubble_style_normal = """
-    <div style="
-        background-color: lightblue;
-        border-radius: 10px;
-        padding: 10px;
-        margin: 5px 0;
-    ">
-"""
-chat_bubble_style_steered = """
-    <div style="
-        background-color: lightgreen;
-        border-radius: 10px;
-        padding: 10px;
-        margin: 5px 0;
-    ">
-"""
-
 # Main interface
 st.title("Steer Models")
 
+# Define CSS styles for colored boxes
+def format_response(response, role):
+    """Format responses with colored boxes for Normal and Steered."""
+    color = "lightblue" if role == "normal" else "lightgreen"
+    return f"""
+        <div style="
+            background-color: {color};
+            border-radius: 10px;
+            padding: 10px;
+            margin: 5px 0;
+        ">
+            {response}
+        </div>
+    """
+
 if st.session_state.features_mode == "default":
-    # Render Normal section
-    st.markdown(normal_section_style, unsafe_allow_html=True)
-    st.subheader("NORMAL")
-    st.markdown(f"### Model: Normal {model}")
-    st.markdown("""I'm the default, non-steered model.""")
+    # Default UI with Normal and Steered Headers
+    col1, col2 = st.columns(2)
 
-    # Chat history for NORMAL
-    st.markdown("#### Chat - NORMAL")
-    for chat in st.session_state.chat_history:
-        st.markdown(f"👤: {chat['user_input']}", unsafe_allow_html=True)
-        st.markdown(chat_bubble_style_normal + chat["normal_response"] + "</div>", unsafe_allow_html=True)
+    with col1:
+        st.subheader("NORMAL")
+        st.markdown(f"### Model: Normal {model}")
+        st.markdown("""I'm the default, non-steered model.""")
 
-    st.markdown("</div>", unsafe_allow_html=True)  # Close Normal section container
+        # Normal Chat History
+        with st.container():
+            st.markdown("#### Chat - NORMAL")
+            for chat in st.session_state.chat_history:
+                st.markdown(f"👤: {chat['user_input']}", unsafe_allow_html=True)
+                st.markdown(format_response(chat['normal_response'], "normal"), unsafe_allow_html=True)
 
-    # Render Steered section
-    st.markdown(steered_section_style, unsafe_allow_html=True)
-    st.subheader("STEERED")
-    st.markdown(f"### Model: Steered {model}")
-    st.markdown("""Choose a demo, select a preset, or manually search and add features.""")
+    with col2:
+        st.subheader("STEERED")
+        st.markdown(f"### Model: Steered {model}")
+        st.markdown("""Choose a demo, select a preset, or manually search and add features.""")
 
-    # Chat history for STEERED
-    st.markdown("#### Chat - STEERED")
-    for chat in st.session_state.chat_history:
-        st.markdown(f"👤: {chat['user_input']}", unsafe_allow_html=True)
-        st.markdown(chat_bubble_style_steered + chat["steered_response"] + "</div>", unsafe_allow_html=True)
-
-    st.markdown("</div>", unsafe_allow_html=True)  # Close Steered section container
+        # Steered Chat History
+        with st.container():
+            st.markdown("#### Chat - STEERED")
+            for chat in st.session_state.chat_history:
+                st.markdown(f"👤: {chat['user_input']}", unsafe_allow_html=True)
+                st.markdown(format_response(chat['steered_response'], "steered"), unsafe_allow_html=True)
 
     # Unified Chat Input
     st.markdown("### Send a Message")
