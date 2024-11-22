@@ -12,6 +12,8 @@ if "steered_memory" not in st.session_state:
     st.session_state.steered_memory = ConversationBufferMemory()
 if "selected_features" not in st.session_state:
     st.session_state.selected_features = []  # To store selected descriptions, layer, and index
+if "available_descriptions" not in st.session_state:
+    st.session_state.available_descriptions = []  # To temporarily store descriptions for a query
 
 # API details
 API_URL = "https://www.neuronpedia.org/api/steer-chat"
@@ -39,26 +41,15 @@ if st.sidebar.button("Search"):
 
             explanations = search_data.get("results", [])
             if explanations:
-                # Display explanation descriptions for user selection
-                descriptions = [exp["description"] for exp in explanations]
-                selected_description = st.sidebar.selectbox(
-                    "Select an explanation", [""] + descriptions
-                )
-
-                # Add selected feature
-                if selected_description:
-                    selected_explanation = next(
-                        (exp for exp in explanations if exp["description"] == selected_description), None
-                    )
-                    if selected_explanation:
-                        feature = {
-                            "description": selected_description,
-                            "layer": selected_explanation["layer"],
-                            "index": selected_explanation["index"],
-                        }
-                        if feature not in st.session_state.selected_features:
-                            st.session_state.selected_features.append(feature)
-                            st.sidebar.success(f"Feature added: {selected_description}")
+                # Extract and display explanation descriptions for user selection
+                st.session_state.available_descriptions = [
+                    {
+                        "description": exp["description"],
+                        "layer": exp["layer"],
+                        "index": exp["index"],
+                    }
+                    for exp in explanations
+                ]
             else:
                 st.sidebar.error("No explanations found.")
         except requests.exceptions.RequestException as e:
@@ -66,13 +57,31 @@ if st.sidebar.button("Search"):
     else:
         st.sidebar.error("Query must be at least 3 characters long.")
 
+# Handle description selection
+if st.session_state.available_descriptions:
+    descriptions = [desc["description"] for desc in st.session_state.available_descriptions]
+    selected_description = st.sidebar.selectbox("Select an explanation", [""] + descriptions)
+    if selected_description:
+        # Find the corresponding feature and add it to the selected features
+        feature = next(
+            (desc for desc in st.session_state.available_descriptions if desc["description"] == selected_description),
+            None,
+        )
+        if feature and feature not in st.session_state.selected_features:
+            st.session_state.selected_features.append(feature)
+            st.session_state.available_descriptions = []  # Clear temporary storage after selection
+            st.sidebar.success(f"Feature added: {selected_description}")
+
 # Display selected descriptions
 st.sidebar.markdown("### Selected Features")
 if st.session_state.selected_features:
     for feature in st.session_state.selected_features:
-        st.sidebar.markdown(f"- **Description**: {feature['description']}<br>"
-                            f"  **Layer**: {feature['layer']}<br>"
-                            f"  **Index**: {feature['index']}", unsafe_allow_html=True)
+        st.sidebar.markdown(
+            f"- **Description**: {feature['description']}<br>"
+            f"  **Layer**: {feature['layer']}<br>"
+            f"  **Index**: {feature['index']}",
+            unsafe_allow_html=True,
+        )
 else:
     st.sidebar.markdown("No features selected yet.")
 
