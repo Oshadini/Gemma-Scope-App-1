@@ -31,6 +31,7 @@ strength_multiplier = st.sidebar.number_input("Strength Multiplier", value=4, st
 steer_special_tokens = st.sidebar.checkbox("Steer Special Tokens", value=True)
 
 # Chat interface
+# Chat interface
 st.markdown("### Chat Interface")
 user_input = st.text_input("Your Message:", key="user_input")
 if st.button("Send"):
@@ -60,39 +61,39 @@ if st.button("Send"):
             "steer_special_tokens": steer_special_tokens
         }
 
-        # API Call
-# Extract responses from API
-try:
-    response = requests.post(API_URL, json=payload, headers=HEADERS)
-    response.raise_for_status()
-    data = response.json()
+        # API Call and response handling
+        try:
+            response = requests.post(API_URL, json=payload, headers=HEADERS)
+            response.raise_for_status()
+            data = response.json()
 
-    # Debugging: Print the entire API response
-    st.write("API Response Data:", data)
+            # Debugging: Print the entire API response
+            st.write("API Response Data:", data)
 
-    # Parse Default and Steered chat templates
-    default_chat = data.get("DEFAULT", {}).get("chat_template", [])
-    steered_chat = data.get("STEERED", {}).get("chat_template", [])
+            # Parse Default and Steered chat templates
+            default_chat = data.get("DEFAULT", {}).get("chat_template", [])
+            steered_chat = data.get("STEERED", {}).get("chat_template", [])
 
-    # Extract the latest model response for default and steered
-    default_response = (
-        default_chat[-1]["content"] if default_chat and default_chat[-1]["role"] == "model" else "No response"
-    )
-    steered_response = (
-        steered_chat[-1]["content"] if steered_chat and steered_chat[-1]["role"] == "model" else "No response"
-    )
+            # Extract the latest model response for default and steered
+            default_response = (
+                default_chat[-1]["content"] if default_chat and default_chat[-1]["role"] == "model" else "No response"
+            )
+            steered_response = (
+                steered_chat[-1]["content"] if steered_chat and steered_chat[-1]["role"] == "model" else "No response"
+            )
 
-    # Add user input and responses to memory
-    st.session_state.default_memory.chat_memory.add_user_message(user_input)
-    st.session_state.default_memory.chat_memory.add_ai_message(default_response)
+            # Add user input and responses to memory
+            st.session_state.default_memory.chat_memory.add_user_message(user_input)
+            st.session_state.default_memory.chat_memory.add_ai_message(default_response)
 
-    st.session_state.steered_memory.chat_memory.add_user_message(user_input)
-    st.session_state.steered_memory.chat_memory.add_ai_message(steered_response)
+            st.session_state.steered_memory.chat_memory.add_user_message(user_input)
+            st.session_state.steered_memory.chat_memory.add_ai_message(steered_response)
 
-except requests.exceptions.RequestException as e:
-    st.error(f"API request failed: {e}")
-except (IndexError, TypeError, KeyError) as e:
-    st.error(f"Error parsing API response: {e}")
+        except requests.exceptions.RequestException as e:
+            st.error(f"API request failed: {e}")
+        except (IndexError, TypeError, KeyError) as e:
+            st.error(f"Error parsing API response: {e}")
+
 
 
 # Display Chat History
