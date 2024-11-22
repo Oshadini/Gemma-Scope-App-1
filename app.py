@@ -98,9 +98,7 @@ with col1:
 
 with col2:
     st.subheader("Steered Model Chat")
-    for message in st.session_state.steered_memory.chat_memory:
-        role = message["role"]
-        content = message["content"]
+    for role, content in st.session_state.steered_memory.chat_memory:  # Tuple unpacking
         if role == "user":
             st.markdown(f"**👤 User:** {content}")
         else:
