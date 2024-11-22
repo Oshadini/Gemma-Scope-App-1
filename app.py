@@ -95,27 +95,47 @@ if st.button("Send"):
 # Display Chat History
 col1, col2 = st.columns(2)
 
+from langchain.schema import HumanMessage, AIMessage
+
 # Display Default Model Chat
 with col1:
     st.subheader("Default Model Chat")
     for message in st.session_state.default_memory.chat_memory.messages:
-        # Access role and content directly as attributes
-        role = message.role  # "user" or "assistant"
+        # Determine role based on message type
+        if isinstance(message, HumanMessage):
+            role = "user"
+        elif isinstance(message, AIMessage):
+            role = "assistant"
+        else:
+            role = "system"  # Handle other message types if applicable
+
+        # Get content
         content = message.content
+
+        # Display the message
         if role == "user":
             st.markdown(f"**👤 User:** {content}")
-        else:
+        elif role == "assistant":
             st.markdown(f"**🤖 Default Model:** {content}")
 
 # Display Steered Model Chat
 with col2:
     st.subheader("Steered Model Chat")
     for message in st.session_state.steered_memory.chat_memory.messages:
-        # Access role and content directly as attributes
-        role = message.role  # "user" or "assistant"
+        # Determine role based on message type
+        if isinstance(message, HumanMessage):
+            role = "user"
+        elif isinstance(message, AIMessage):
+            role = "assistant"
+        else:
+            role = "system"  # Handle other message types if applicable
+
+        # Get content
         content = message.content
+
+        # Display the message
         if role == "user":
             st.markdown(f"**👤 User:** {content}")
-        else:
+        elif role == "assistant":
             st.markdown(f"**🤖 Steered Model:** {content}")
 
