@@ -66,7 +66,10 @@ if st.button("Send"):
             response.raise_for_status()
             data = response.json()
 
-            # Extract responses
+            # Debugging: Check the API response structure
+            st.write("API Response:", data)
+
+            # Extract responses safely
             default_response = data.get("defaultChatMessages", [{}])[0].get("content", "No response")
             steered_response = data.get("steeredChatMessages", [{}])[0].get("content", "No response")
 
@@ -79,6 +82,8 @@ if st.button("Send"):
 
         except requests.exceptions.RequestException as e:
             st.error(f"API request failed: {e}")
+        except (IndexError, TypeError, KeyError) as e:
+            st.error(f"Error parsing API response: {e}")
 
 # Display Chat History
 col1, col2 = st.columns(2)
@@ -102,6 +107,3 @@ with col2:
             st.markdown(f"**👤 User:** {content}")
         else:
             st.markdown(f"**🤖 Steered Model:** {content}")
-
-
-
