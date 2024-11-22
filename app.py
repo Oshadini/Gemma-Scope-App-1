@@ -17,7 +17,7 @@ if "selected_features" not in st.session_state:
 API_URL = "https://www.neuronpedia.org/api/steer-chat"
 SEARCH_API_URL = "https://www.neuronpedia.org/api/explanation/search-model"
 MODEL_ID = "gemma-2-9b-it"
-HEADERS = {"Content-Type": "application/json", "X-Api-Key": "YOUR_TOKEN"}
+HEADERS = {"Content-Type": "application/json", "X-Api-Key": "sk-np-h0ZsR5M1gY0w8al332rJUYa0C8hQL2yUogd5n4Pgvvg0"}
 
 # Streamlit UI
 st.title("Steer With SAE Features (Chat)")
@@ -66,8 +66,11 @@ if st.sidebar.button("Search"):
 
 # Display selected descriptions
 st.sidebar.markdown("### Selected Features")
-for feature in st.session_state.selected_features:
-    st.sidebar.markdown(f"- {feature['description']}")
+if st.session_state.selected_features:
+    for feature in st.session_state.selected_features:
+        st.sidebar.markdown(f"- {feature['description']}")
+else:
+    st.sidebar.markdown("No features selected yet.")
 
 # User input for features
 layer = st.sidebar.text_input("Layer", value="9-gemmascope-res-131k")
