@@ -5,13 +5,13 @@ import requests
 from langchain.memory import ConversationBufferMemory
 from langchain.schema import HumanMessage, AIMessage
 
-# Initialize Conversation Memory
+# Initialize Session State
 if "default_memory" not in st.session_state:
     st.session_state.default_memory = ConversationBufferMemory()
 if "steered_memory" not in st.session_state:
     st.session_state.steered_memory = ConversationBufferMemory()
 if "selected_features" not in st.session_state:
-    st.session_state.selected_features = []  # Stores selected descriptions with their details
+    st.session_state.selected_features = []  # To store selected descriptions, layer, and index
 
 # API details
 API_URL = "https://www.neuronpedia.org/api/steer-chat"
@@ -26,43 +26,39 @@ st.sidebar.title("Settings")
 # User input for search query
 st.sidebar.markdown("### Search for Explanations")
 query = st.sidebar.text_input("Enter Query:", key="query_input", placeholder="Search for explanations...")
+
+# Search and display results
 if st.sidebar.button("Search"):
     if len(query) >= 3:
-        # Search API Call
         try:
-            search_payload = {
-                "modelId": MODEL_ID,
-                "query": query
-            }
+            # Call the Search API
+            search_payload = {"modelId": MODEL_ID, "query": query}
             search_response = requests.post(SEARCH_API_URL, json=search_payload, headers=HEADERS)
             search_response.raise_for_status()
             search_data = search_response.json()
 
             explanations = search_data.get("results", [])
             if explanations:
-                # Allow multiple selections from descriptions
+                # Display explanation descriptions for user selection
                 descriptions = [exp["description"] for exp in explanations]
-                selected_descriptions = st.sidebar.multiselect(
-                    "Select explanations (multiple allowed)", descriptions
+                selected_description = st.sidebar.selectbox(
+                    "Select an explanation", [""] + descriptions
                 )
 
-                # Add selected features with layer and index
-                for selected_description in selected_descriptions:
+                # Add selected feature
+                if selected_description:
                     selected_explanation = next(
                         (exp for exp in explanations if exp["description"] == selected_description), None
                     )
                     if selected_explanation:
-                        layer = selected_explanation["layer"]
-                        index = selected_explanation["index"]
                         feature = {
                             "description": selected_description,
-                            "layer": layer,
-                            "index": index
+                            "layer": selected_explanation["layer"],
+                            "index": selected_explanation["index"],
                         }
-                        # Avoid duplicates
                         if feature not in st.session_state.selected_features:
                             st.session_state.selected_features.append(feature)
-                            st.sidebar.success(f"Added: {selected_description}")
+                            st.sidebar.success(f"Feature added: {selected_description}")
             else:
                 st.sidebar.error("No explanations found.")
         except requests.exceptions.RequestException as e:
@@ -74,7 +70,9 @@ if st.sidebar.button("Search"):
 st.sidebar.markdown("### Selected Features")
 if st.session_state.selected_features:
     for feature in st.session_state.selected_features:
-        st.sidebar.markdown(f"- {feature['description']} (Layer: {feature['layer']}, Index: {feature['index']})")
+        st.sidebar.markdown(f"- **Description**: {feature['description']}<br>"
+                            f"  **Layer**: {feature['layer']}<br>"
+                            f"  **Index**: {feature['index']}", unsafe_allow_html=True)
 else:
     st.sidebar.markdown("No features selected yet.")
 
@@ -100,7 +98,7 @@ if st.button("Send"):
                 "modelId": MODEL_ID,
                 "layer": feature["layer"],
                 "index": feature["index"],
-                "strength": 48  # Default strength value
+                "strength": 48,  # Default strength
             }
             for feature in st.session_state.selected_features
         ]
@@ -120,7 +118,7 @@ if st.button("Send"):
             "freq_penalty": freq_penalty,
             "seed": seed,
             "strength_multiplier": strength_multiplier,
-            "steer_special_tokens": steer_special_tokens
+            "steer_special_tokens": steer_special_tokens,
         }
 
         # API Call and response handling
