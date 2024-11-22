@@ -61,36 +61,39 @@ if st.button("Send"):
         }
 
         # API Call
-        try:
-            response = requests.post(API_URL, json=payload, headers=HEADERS)
-            response.raise_for_status()
-            data = response.json()
+# Extract responses from API
+try:
+    response = requests.post(API_URL, json=payload, headers=HEADERS)
+    response.raise_for_status()
+    data = response.json()
 
-            # Debugging: Check the API response structure
-            st.write("API Response:", data)
+    # Debugging: Print the entire API response
+    st.write("API Response Data:", data)
 
-            # Extract responses safely
-            default_response = data.get("defaultChatMessages", [{}])[0].get("content", "No response")
-            steered_response = data.get("steeredChatMessages", [{}])[0].get("content", "No response")
-            
-            # Add user input to default memory
-            st.session_state.default_memory.chat_memory.add_user_message(user_input)
-            
-            # Add default model response to default memory
-            st.session_state.default_memory.chat_memory.add_ai_message(default_response)
-            
-            # Add user input to steered memory
-            st.session_state.steered_memory.chat_memory.add_user_message(user_input)
-            
-            # Add steered model response to steered memory
-            st.session_state.steered_memory.chat_memory.add_ai_message(steered_response)
+    # Parse Default and Steered chat templates
+    default_chat = data.get("DEFAULT", {}).get("chat_template", [])
+    steered_chat = data.get("STEERED", {}).get("chat_template", [])
 
+    # Extract the latest model response for default and steered
+    default_response = (
+        default_chat[-1]["content"] if default_chat and default_chat[-1]["role"] == "model" else "No response"
+    )
+    steered_response = (
+        steered_chat[-1]["content"] if steered_chat and steered_chat[-1]["role"] == "model" else "No response"
+    )
 
+    # Add user input and responses to memory
+    st.session_state.default_memory.chat_memory.add_user_message(user_input)
+    st.session_state.default_memory.chat_memory.add_ai_message(default_response)
 
-        except requests.exceptions.RequestException as e:
-            st.error(f"API request failed: {e}")
-        except (IndexError, TypeError, KeyError) as e:
-            st.error(f"Error parsing API response: {e}")
+    st.session_state.steered_memory.chat_memory.add_user_message(user_input)
+    st.session_state.steered_memory.chat_memory.add_ai_message(steered_response)
+
+except requests.exceptions.RequestException as e:
+    st.error(f"API request failed: {e}")
+except (IndexError, TypeError, KeyError) as e:
+    st.error(f"Error parsing API response: {e}")
+
 
 # Display Chat History
 col1, col2 = st.columns(2)
@@ -101,41 +104,18 @@ from langchain.schema import HumanMessage, AIMessage
 with col1:
     st.subheader("Default Model Chat")
     for message in st.session_state.default_memory.chat_memory.messages:
-        # Determine role based on message type
         if isinstance(message, HumanMessage):
-            role = "user"
+            st.markdown(f"**👤 User:** {message.content}")
         elif isinstance(message, AIMessage):
-            role = "assistant"
-        else:
-            role = "system"  # Handle other message types if applicable
-
-        # Get content
-        content = message.content
-
-        # Display the message
-        if role == "user":
-            st.markdown(f"**👤 User:** {content}")
-        elif role == "assistant":
-            st.markdown(f"**🤖 Default Model:** {content}")
+            st.markdown(f"**🤖 Default Model:** {message.content}")
 
 # Display Steered Model Chat
 with col2:
     st.subheader("Steered Model Chat")
     for message in st.session_state.steered_memory.chat_memory.messages:
-        # Determine role based on message type
         if isinstance(message, HumanMessage):
-            role = "user"
+            st.markdown(f"**👤 User:** {message.content}")
         elif isinstance(message, AIMessage):
-            role = "assistant"
-        else:
-            role = "system"  # Handle other message types if applicable
+            st.markdown(f"**🤖 Steered Model:** {message.content}")
 
-        # Get content
-        content = message.content
-
-        # Display the message
-        if role == "user":
-            st.markdown(f"**👤 User:** {content}")
-        elif role == "assistant":
-            st.markdown(f"**🤖 Steered Model:** {content}")
 
