@@ -5,19 +5,17 @@ import requests
 from langchain.memory import ConversationBufferMemory
 from langchain.schema import HumanMessage, AIMessage
 
-# Initialize Session State
+# Initialize Conversation Memory
 if "default_memory" not in st.session_state:
     st.session_state.default_memory = ConversationBufferMemory()
 if "steered_memory" not in st.session_state:
     st.session_state.steered_memory = ConversationBufferMemory()
-if "selected_features" not in st.session_state:
-    st.session_state.selected_features = []
 
 # API details
 API_URL = "https://www.neuronpedia.org/api/steer-chat"
 SEARCH_API_URL = "https://www.neuronpedia.org/api/explanation/search-model"
 MODEL_ID = "gemma-2-9b-it"
-HEADERS = {"Content-Type": "application/json", "X-Api-Key": "sk-np-h0ZsR5M1gY0w8al332rJUYa0C8hQL2yUogd5n4Pgvvg0"}
+HEADERS = {"Content-Type": "application/json", "X-Api-Key": "YOUR_TOKEN"}
 
 # Streamlit UI
 st.title("Steer With SAE Features (Chat)")
@@ -26,6 +24,7 @@ st.sidebar.title("Settings")
 # User input for search query
 st.sidebar.markdown("### Search for Explanations")
 query = st.sidebar.text_input("Enter Query:", key="query_input", placeholder="Search for explanations...")
+selected_description = None
 if st.sidebar.button("Search"):
     if len(query) >= 3:
         # Search API Call
@@ -42,35 +41,20 @@ if st.sidebar.button("Search"):
             if explanations:
                 # Display descriptions for user selection
                 descriptions = [exp["description"] for exp in explanations]
-                selected_description = st.sidebar.selectbox("Select an explanation", [""] + descriptions)
+                selected_description = st.sidebar.selectbox("Select an explanation", descriptions)
 
-                # Add selected feature
+                # Fetch corresponding layer and index
                 if selected_description:
                     selected_explanation = next(
                         (exp for exp in explanations if exp["description"] == selected_description), None
                     )
                     layer = selected_explanation["layer"]
                     index = selected_explanation["index"]
-
-                    # Store selected feature
-                    feature = {"description": selected_description, "layer": layer, "index": index}
-                    if feature not in st.session_state.selected_features:
-                        st.session_state.selected_features.append(feature)
-                        st.sidebar.success(f"Feature added: {selected_description}")
+                    st.sidebar.success(f"Layer: {layer}, Index: {index} selected.")
             else:
                 st.sidebar.error("No explanations found.")
         except requests.exceptions.RequestException as e:
             st.sidebar.error(f"Search API request failed: {e}")
-    else:
-        st.sidebar.error("Query must be at least 3 characters long.")
-
-# Display selected descriptions
-st.sidebar.markdown("### Selected Features")
-if st.session_state.selected_features:
-    for feature in st.session_state.selected_features:
-        st.sidebar.markdown(f"- {feature['description']}")
-else:
-    st.sidebar.markdown("No features selected yet.")
 
 # User input for features
 layer = st.sidebar.text_input("Layer", value="9-gemmascope-res-131k")
@@ -88,17 +72,6 @@ st.markdown("### Chat Interface")
 user_input = st.text_input("Your Message:", key="user_input")
 if st.button("Send"):
     if user_input:
-        # Prepare features for the API payload
-        features = [
-            {
-                "modelId": MODEL_ID,
-                "layer": feature["layer"],
-                "index": feature["index"],
-                "strength": 48  # Default strength value
-            }
-            for feature in st.session_state.selected_features
-        ]
-
         # Prepare API payload
         payload = {
             "defaultChatMessages": [
@@ -108,7 +81,14 @@ if st.button("Send"):
                 {"role": "user", "content": user_input}
             ],
             "modelId": MODEL_ID,
-            "features": features,
+            "features": [
+                {
+                    "modelId": MODEL_ID,
+                    "layer": layer,
+                    "index": index,
+                    "strength": strength
+                }
+            ],
             "temperature": temperature,
             "n_tokens": n_tokens,
             "freq_penalty": freq_penalty,
