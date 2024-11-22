@@ -90,9 +90,7 @@ col1, col2 = st.columns(2)
 
 with col1:
     st.subheader("Default Model Chat")
-    for message in st.session_state.default_memory.chat_memory:
-        role = message["role"]
-        content = message["content"]
+    for role, content in st.session_state.default_memory.chat_memory:  # Tuple unpacking
         if role == "user":
             st.markdown(f"**👤 User:** {content}")
         else:
