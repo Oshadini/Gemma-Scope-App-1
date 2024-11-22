@@ -4,19 +4,19 @@ import streamlit as st
 import requests
 from langchain.memory import ConversationBufferMemory
 
-# Initialize Conversation Memory
+# Initialize Session State
 if "default_memory" not in st.session_state:
     st.session_state.default_memory = ConversationBufferMemory()
 if "steered_memory" not in st.session_state:
     st.session_state.steered_memory = ConversationBufferMemory()
-
-# Persistent state for selected features
-if "selected_features" not in st.session_state:
-    st.session_state.selected_features = []
+if "selected_descriptions" not in st.session_state:
+    st.session_state.selected_descriptions = {}
+if "feature_details" not in st.session_state:
+    st.session_state.feature_details = {}
 
 # API details
 SEARCH_API_URL = "https://www.neuronpedia.org/api/explanation/search-model"
-STEER_CHAT_API_URL = "https://www.neuronpedia.org/api/steer-chat"
+STEER_API_URL = "https://www.neuronpedia.org/api/steer-chat"
 MODEL_ID = "gemma-2-9b-it"
 HEADERS = {
     "Content-Type": "application/json",
@@ -27,81 +27,107 @@ HEADERS = {
 st.title("Steer With SAE Features (Chat)")
 st.sidebar.title("Settings")
 
-# Chat interface
-st.markdown("### Chat Interface")
-user_query = st.text_input("Enter your query (min 3 characters):")
+# Sidebar to display selected descriptions
+st.sidebar.markdown("### Selected Features")
+for query, descriptions in st.session_state.selected_descriptions.items():
+    st.sidebar.markdown(f"**Query: {query}**")
+    for desc in descriptions:
+        st.sidebar.markdown(f"- {desc}")
 
+# User input for querying
+st.markdown("### Query Explanations")
+query_input = st.text_input("Enter your query (min 3 characters):")
 if st.button("Search"):
-    if len(user_query) < 3:
-        st.error("Query must be at least 3 characters long.")
-    else:
-        # Prepare payload for search API
-        search_payload = {
+    if len(query_input) >= 3:
+        # Search API Call
+        payload = {
             "modelId": MODEL_ID,
-            "query": user_query
+            "query": query_input
         }
-
         try:
-            search_response = requests.post(SEARCH_API_URL, json=search_payload, headers=HEADERS)
-            search_response.raise_for_status()
-            search_data = search_response.json()
+            response = requests.post(SEARCH_API_URL, json=payload, headers=HEADERS)
+            response.raise_for_status()
+            data = response.json()
 
-            # Extract explanations
-            explanations = search_data.get("explanations", [])
-            if not explanations:
-                st.info("No explanations found for the query.")
+            # Extract "description", "layer", and "index"
+            explanations = data.get("results", [])
+            if explanations:
+                options = [
+                    (exp["description"], exp["layer"], exp["index"]) for exp in explanations
+                ]
+                st.session_state.feature_details[query_input] = options
+
+                # Display descriptions
+                st.markdown(f"#### Results for '{query_input}'")
+                for i, (desc, _, _) in enumerate(options, 1):
+                    st.write(f"{i}. {desc}")
             else:
-                st.session_state.current_explanations = explanations
-
-                # Display all descriptions
-                for idx, explanation in enumerate(explanations):
-                    description = explanation.get("description", "No description")
-                    layer = explanation.get("layer")
-                    index = explanation.get("index")
-                    if st.button(f"Select: {description}"):
-                        # Add selected feature to session state
-                        st.session_state.selected_features.append({
-                            "modelId": MODEL_ID,
-                            "layer": layer,
-                            "index": index
-                        })
-                        st.success(f"Selected: {description}")
+                st.warning(f"No results found for '{query_input}'.")
 
         except requests.exceptions.RequestException as e:
-            st.error(f"Search API request failed: {e}")
+            st.error(f"API request failed: {e}")
+    else:
+        st.error("Query must be at least 3 characters long.")
 
-# Display selected features
-st.markdown("### Selected Features")
-if st.session_state.selected_features:
-    for feature in st.session_state.selected_features:
-        st.markdown(f"- **Layer**: {feature['layer']}, **Index**: {feature['index']}")
-else:
-    st.info("No features selected yet.")
+# User selection of descriptions
+if query_input in st.session_state.feature_details:
+    options = st.session_state.feature_details[query_input]
+    descriptions = [opt[0] for opt in options]
+    selected_desc = st.selectbox(
+        "Select a description to add to features:",
+        [""] + descriptions
+    )
+    if st.button("Add Feature"):
+        if selected_desc:
+            selected_option = next(
+                (opt for opt in options if opt[0] == selected_desc), None
+            )
+            if selected_option:
+                desc, layer, index = selected_option
+                if query_input not in st.session_state.selected_descriptions:
+                    st.session_state.selected_descriptions[query_input] = []
+                if desc not in st.session_state.selected_descriptions[query_input]:
+                    st.session_state.selected_descriptions[query_input].append(desc)
 
-# Chat input
-user_input = st.text_input("Your Message for the Steered Chat:")
+# Prepare features for the steer API
+features = []
+for query, descriptions in st.session_state.selected_descriptions.items():
+    for desc in descriptions:
+        for option in st.session_state.feature_details.get(query, []):
+            if option[0] == desc:
+                features.append({
+                    "modelId": MODEL_ID,
+                    "layer": option[1],
+                    "index": option[2],
+                    "strength": 48  # Default strength value
+                })
+
+# Chat interface
+st.markdown("### Chat Interface")
+user_input = st.text_input("Your Message:", key="user_input")
 if st.button("Send"):
     if user_input:
-        # Prepare steered chat API payload
+        # Prepare payload for steer API
         payload = {
             "defaultChatMessages": [{"role": "user", "content": user_input}],
             "steeredChatMessages": [{"role": "user", "content": user_input}],
             "modelId": MODEL_ID,
-            "features": st.session_state.selected_features,
-            "temperature": 0.5,
-            "n_tokens": 48,
-            "freq_penalty": 2,
-            "seed": 16,
-            "strength_multiplier": 4,
-            "steer_special_tokens": True
+            "features": features,
+            "temperature": 0.5,  # Default temperature
+            "n_tokens": 48,  # Default token count
+            "freq_penalty": 2,  # Default frequency penalty
+            "seed": 16,  # Default seed
+            "strength_multiplier": 4,  # Default multiplier
+            "steer_special_tokens": True  # Default special tokens
         }
 
+        # Steer API Call
         try:
-            response = requests.post(STEER_CHAT_API_URL, json=payload, headers=HEADERS)
+            response = requests.post(STEER_API_URL, json=payload, headers=HEADERS)
             response.raise_for_status()
             data = response.json()
 
-            # Parse and display API responses
+            # Parse responses
             default_chat = data.get("DEFAULT", {}).get("chat_template", [])
             steered_chat = data.get("STEERED", {}).get("chat_template", [])
 
@@ -112,16 +138,12 @@ if st.button("Send"):
                 steered_chat[-1]["content"] if steered_chat and steered_chat[-1]["role"] == "model" else "No response"
             )
 
+            # Add responses to memory
             st.session_state.default_memory.chat_memory.add_user_message(user_input)
             st.session_state.default_memory.chat_memory.add_ai_message(default_response)
 
             st.session_state.steered_memory.chat_memory.add_user_message(user_input)
             st.session_state.steered_memory.chat_memory.add_ai_message(steered_response)
-
-            st.write("### Default Model Response")
-            st.write(default_response)
-            st.write("### Steered Model Response")
-            st.write(steered_response)
 
         except requests.exceptions.RequestException as e:
             st.error(f"API request failed: {e}")
@@ -133,7 +155,7 @@ col1, col2 = st.columns(2)
 
 from langchain.schema import HumanMessage, AIMessage
 
-# Display Default Model Chat
+# Default Model Chat
 with col1:
     st.subheader("Default Model Chat")
     for message in st.session_state.default_memory.chat_memory.messages:
@@ -142,7 +164,7 @@ with col1:
         elif isinstance(message, AIMessage):
             st.markdown(f"**🤖 Default Model:** {message.content}")
 
-# Display Steered Model Chat
+# Steered Model Chat
 with col2:
     st.subheader("Steered Model Chat")
     for message in st.session_state.steered_memory.chat_memory.messages:
