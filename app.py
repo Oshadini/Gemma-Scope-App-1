@@ -5,13 +5,13 @@ import requests
 from langchain.memory import ConversationBufferMemory
 from langchain.schema import HumanMessage, AIMessage
 
-# Initialize Conversation Memory and State
+# Initialize Conversation Memory
 if "default_memory" not in st.session_state:
     st.session_state.default_memory = ConversationBufferMemory()
 if "steered_memory" not in st.session_state:
     st.session_state.steered_memory = ConversationBufferMemory()
 if "selected_features" not in st.session_state:
-    st.session_state.selected_features = []
+    st.session_state.selected_features = []  # Stores selected descriptions with their details
 
 # API details
 API_URL = "https://www.neuronpedia.org/api/steer-chat"
@@ -40,11 +40,13 @@ if st.sidebar.button("Search"):
 
             explanations = search_data.get("results", [])
             if explanations:
-                # Display descriptions for user selection
+                # Allow multiple selections from descriptions
                 descriptions = [exp["description"] for exp in explanations]
-                selected_descriptions = st.sidebar.multiselect("Select explanations", descriptions)
+                selected_descriptions = st.sidebar.multiselect(
+                    "Select explanations (multiple allowed)", descriptions
+                )
 
-                # Add selected features
+                # Add selected features with layer and index
                 for selected_description in selected_descriptions:
                     selected_explanation = next(
                         (exp for exp in explanations if exp["description"] == selected_description), None
@@ -52,13 +54,12 @@ if st.sidebar.button("Search"):
                     if selected_explanation:
                         layer = selected_explanation["layer"]
                         index = selected_explanation["index"]
-
-                        # Store selected feature
                         feature = {
                             "description": selected_description,
                             "layer": layer,
                             "index": index
                         }
+                        # Avoid duplicates
                         if feature not in st.session_state.selected_features:
                             st.session_state.selected_features.append(feature)
                             st.sidebar.success(f"Added: {selected_description}")
