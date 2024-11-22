@@ -72,26 +72,19 @@ if st.button("Send"):
             # Extract responses safely
             default_response = data.get("defaultChatMessages", [{}])[0].get("content", "No response")
             steered_response = data.get("steeredChatMessages", [{}])[0].get("content", "No response")
-
-            # Add user input to memory
-            st.session_state.default_memory.chat_memory.add_message(
-                {"role": "user", "content": user_input}
-            )
             
-            # Add default response to memory
-            st.session_state.default_memory.chat_memory.add_message(
-                {"role": "assistant", "content": default_response}
-            )
+            # Add user input to default memory
+            st.session_state.default_memory.chat_memory.add_user_message(user_input)
+            
+            # Add default model response to default memory
+            st.session_state.default_memory.chat_memory.add_ai_message(default_response)
             
             # Add user input to steered memory
-            st.session_state.steered_memory.chat_memory.add_message(
-                {"role": "user", "content": user_input}
-            )
+            st.session_state.steered_memory.chat_memory.add_user_message(user_input)
             
-            # Add steered response to memory
-            st.session_state.steered_memory.chat_memory.add_message(
-                {"role": "assistant", "content": steered_response}
-            )
+            # Add steered model response to steered memory
+            st.session_state.steered_memory.chat_memory.add_ai_message(steered_response)
+
 
 
         except requests.exceptions.RequestException as e:
@@ -102,18 +95,25 @@ if st.button("Send"):
 # Display Chat History
 col1, col2 = st.columns(2)
 
+# Display Default Model Chat
 with col1:
     st.subheader("Default Model Chat")
-    for role, content in st.session_state.default_memory.chat_memory:  # Tuple unpacking
+    for message in st.session_state.default_memory.chat_memory.messages:
+        role = message.role  # 'user' or 'assistant'
+        content = message.content
         if role == "user":
             st.markdown(f"**👤 User:** {content}")
         else:
             st.markdown(f"**🤖 Default Model:** {content}")
 
+# Display Steered Model Chat
 with col2:
     st.subheader("Steered Model Chat")
-    for role, content in st.session_state.steered_memory.chat_memory:  # Tuple unpacking
+    for message in st.session_state.steered_memory.chat_memory.messages:
+        role = message.role  # 'user' or 'assistant'
+        content = message.content
         if role == "user":
             st.markdown(f"**👤 User:** {content}")
         else:
             st.markdown(f"**🤖 Steered Model:** {content}")
+
