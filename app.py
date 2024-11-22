@@ -95,12 +95,13 @@ if st.button("Send"):
 # Display Chat History
 col1, col2 = st.columns(2)
 
+
 # Display Default Model Chat
 with col1:
     st.subheader("Default Model Chat")
     for message in st.session_state.default_memory.chat_memory.messages:
-        role = message.role  # 'user' or 'assistant'
-        content = message.content
+        role = message["role"]
+        content = message["content"]
         if role == "user":
             st.markdown(f"**👤 User:** {content}")
         else:
@@ -110,10 +111,9 @@ with col1:
 with col2:
     st.subheader("Steered Model Chat")
     for message in st.session_state.steered_memory.chat_memory.messages:
-        role = message.role  # 'user' or 'assistant'
-        content = message.content
+        role = message["role"]
+        content = message["content"]
         if role == "user":
             st.markdown(f"**👤 User:** {content}")
         else:
             st.markdown(f"**🤖 Steered Model:** {content}")
-
