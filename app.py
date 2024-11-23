@@ -11,7 +11,7 @@ if "default_memory" not in st.session_state:
 if "steered_memory" not in st.session_state:
     st.session_state.steered_memory = ConversationBufferMemory()
 if "selected_features" not in st.session_state:
-    st.session_state.selected_features = []  # To store selected descriptions, layer, and index
+    st.session_state.selected_features = []  # To store selected descriptions, layer, index, and strength
 if "available_descriptions" not in st.session_state:
     st.session_state.available_descriptions = []  # To temporarily store descriptions for a query
 
@@ -47,6 +47,7 @@ if st.sidebar.button("Search"):
                         "description": exp["description"],
                         "layer": exp["layer"],
                         "index": exp["index"],
+                        "strength": exp.get("strength", 0),  # Default strength to 0 if not provided
                     }
                     for exp in explanations
                 ]
@@ -68,8 +69,6 @@ if st.session_state.available_descriptions:
             None,
         )
         if feature and feature not in st.session_state.selected_features:
-            # Set default strength to 40 for the new feature
-            feature["strength"] = 40
             st.session_state.selected_features.append(feature)
             st.session_state.available_descriptions = []  # Clear temporary storage after selection
             st.sidebar.success(f"Feature added: {selected_description}")
@@ -82,7 +81,7 @@ if st.session_state.selected_features:
             f"Strength for '{feature['description']}'",
             min_value=-100,
             max_value=100,
-            value=feature["strength"],  # Default to 40 if not already set
+            value=feature["strength"],  # Use the strength from the API response
             key=f"strength_{feature['description']}",
         )
         st.sidebar.markdown(
