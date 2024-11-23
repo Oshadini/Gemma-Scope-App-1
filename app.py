@@ -76,10 +76,12 @@ if st.session_state.available_descriptions:
 
 # Display selected descriptions with sliders for strength adjustment and remove buttons
 # Display selected descriptions with sliders for strength adjustment and remove buttons
+# Display selected descriptions with sliders for strength adjustment and remove buttons
 st.sidebar.markdown("### Selected Features")
 if st.session_state.selected_features:
-    # Using enumerate to handle each feature with an index
-    for i, feature in enumerate(st.session_state.selected_features[:]):  # Use a copy to avoid mutation issues
+    # Create a copy to safely iterate while modifying
+    features_to_remove = []  # Temporary list to track features to remove
+    for i, feature in enumerate(st.session_state.selected_features):
         # Slider for adjusting the strength of the feature
         feature["strength"] = st.sidebar.slider(
             f"Strength for '{feature['description']}'",
@@ -90,13 +92,14 @@ if st.session_state.selected_features:
         )
         # Remove button for deleting the feature
         if st.sidebar.button(f"Remove '{feature['description']}'", key=f"remove_{feature['description']}"):
-            st.session_state.selected_features.pop(i)  # Remove the selected feature
-            st.sidebar.success(f"Feature '{feature['description']}' removed!")
-            # Force a rerun by modifying the session state
-            st.session_state["_rerun_trigger"] = not st.session_state.get("_rerun_trigger", False)
-            st.stop()  # Halt execution and refresh the app
+            features_to_remove.append(i)  # Mark feature for removal
+
+    # Remove the selected features after iteration
+    for i in sorted(features_to_remove, reverse=True):
+        del st.session_state.selected_features[i]
 else:
     st.sidebar.markdown("No features selected yet.")
+
 
 
 # User input for features
