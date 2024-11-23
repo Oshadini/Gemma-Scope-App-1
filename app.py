@@ -1,4 +1,4 @@
-# File: steer_chatbot.py 
+# File: steer_chatbot.py  
 
 import streamlit as st
 import requests
@@ -11,7 +11,7 @@ if "default_memory" not in st.session_state:
 if "steered_memory" not in st.session_state:
     st.session_state.steered_memory = ConversationBufferMemory()
 if "selected_features" not in st.session_state:
-    st.session_state.selected_features = []  # To store selected descriptions, layer, and index
+    st.session_state.selected_features = []  # To store selected descriptions, layer, index, and strength
 if "available_descriptions" not in st.session_state:
     st.session_state.available_descriptions = []  # To temporarily store descriptions for a query
 
@@ -47,6 +47,7 @@ if st.sidebar.button("Search"):
                         "description": exp["description"],
                         "layer": exp["layer"],
                         "index": exp["index"],
+                        "strength": exp.get("strength", 0),  # Default strength to 0 if not provided
                     }
                     for exp in explanations
                 ]
@@ -80,7 +81,7 @@ if st.session_state.selected_features:
             f"Strength for '{feature['description']}'",
             min_value=-100,
             max_value=100,
-            value=feature.get("strength", 0),  # Default to 0 if not already set
+            value=feature["strength"],  # Use the strength from the API response
             key=f"strength_{feature['description']}",
         )
         st.sidebar.markdown(
