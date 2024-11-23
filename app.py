@@ -105,6 +105,7 @@ strength_multiplier = st.sidebar.number_input("Strength Multiplier", value=4, st
 steer_special_tokens = st.sidebar.checkbox("Steer Special Tokens", value=True)
 
 # Chat interface
+# Chat interface
 st.markdown("### Chat Interface")
 user_input = st.text_input("Your Message:", key="user_input")
 if st.button("Send"):
@@ -120,8 +121,9 @@ if st.button("Send"):
             for feature in st.session_state.selected_features
         ]
 
-        # Log features to the console for debugging
-        print("Features being sent:", features)
+        # Show the features being sent to the user
+        st.markdown("### Features Being Sent")
+        st.json(features)
 
         # Prepare API payload
         payload = {
