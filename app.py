@@ -74,27 +74,36 @@ if st.session_state.available_descriptions:
             st.session_state.available_descriptions = []  # Clear temporary storage after selection
             st.sidebar.success(f"Feature added: {selected_description}")
 
-# Display selected descriptions with sliders for strength adjustment and remove buttons
+# Display selected descriptions with sliders for strength adjustment
 st.sidebar.markdown("### Selected Features")
 if st.session_state.selected_features:
-    # Create containers for each feature
-    for i, feature in enumerate(st.session_state.selected_features[:]):  # Use a copy to iterate safely
-        # Create a collapsible container for each feature
-        with st.sidebar.container():
-            # Display the slider for strength
-            feature["strength"] = st.slider(
-                f"Strength for '{feature['description']}'",
-                min_value=-100,
-                max_value=100,
-                value=feature["strength"],
-                key=f"strength_{feature['description']}",
-            )
-            # Add the remove button
-            if st.button(f"Remove '{feature['description']}'", key=f"remove_{feature['description']}"):
-                st.session_state.selected_features.pop(i)  # Remove the selected feature
-                break  # Exit the loop to avoid index shifting issues
+    for feature in st.session_state.selected_features:
+        feature["strength"] = st.sidebar.slider(
+            f"Strength for '{feature['description']}'",
+            min_value=-100,
+            max_value=100,
+            value=feature["strength"],  # Default to 40 if not already set
+            key=f"strength_{feature['description']}",
+        )
+        st.sidebar.markdown(
+            f"- **Description**: {feature['description']}<br>"
+            f"  **Layer**: {feature['layer']}<br>"
+            f"  **Index**: {feature['index']}",
+            unsafe_allow_html=True,
+        )
 else:
     st.sidebar.markdown("No features selected yet.")
+
+# User input for features
+layer = st.sidebar.text_input("Layer", value="9-gemmascope-res-131k")
+index = st.sidebar.number_input("Index", value=62610, step=1)
+strength = st.sidebar.number_input("Strength", value=48, step=1)
+temperature = st.sidebar.slider("Temperature", 0.0, 1.0, 0.5)
+n_tokens = st.sidebar.number_input("Tokens", value=48, step=1)
+freq_penalty = st.sidebar.number_input("Frequency Penalty", value=2, step=1)
+seed = st.sidebar.number_input("Seed", value=16, step=1)
+strength_multiplier = st.sidebar.number_input("Strength Multiplier", value=4, step=1)
+steer_special_tokens = st.sidebar.checkbox("Steer Special Tokens", value=True)
 
 # Chat interface
 st.markdown("### Chat Interface")
@@ -121,7 +130,7 @@ if st.button("Send"):
                 {"role": "user", "content": user_input}
             ],
             "modelId": MODEL_ID,
-            "features": features,  # Pass the combined descriptions
+            "features": features,
             "temperature": temperature,
             "n_tokens": n_tokens,
             "freq_penalty": freq_penalty,
