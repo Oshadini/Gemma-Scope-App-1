@@ -107,6 +107,7 @@ steer_special_tokens = st.sidebar.checkbox("Steer Special Tokens", value=True)
 # Chat interface
 # Chat interface
 # Chat interface
+# Chat interface
 st.markdown("### Chat Interface")
 user_input = st.text_input("Your Message:", key="user_input")
 if st.button("Send"):
@@ -122,9 +123,17 @@ if st.button("Send"):
             for feature in st.session_state.selected_features
         ]
 
-        # Display the features being sent to the user
-        st.markdown("### Features Being Sent")
-        st.json(features)
+        # Display the selected features and their context
+        st.markdown("### Selected Features (For Steering)")
+        if features:
+            for feature in features:
+                st.markdown(
+                    f"- **Description Context**: `{feature['layer']}:{feature['index']}`<br>"
+                    f"  **Strength**: {feature['strength']}",
+                    unsafe_allow_html=True,
+                )
+        else:
+            st.error("No features selected. Steered response may not be influenced.")
 
         # Prepare API payload
         payload = {
@@ -145,7 +154,7 @@ if st.button("Send"):
         }
 
         # Display the full payload being sent
-        st.markdown("### Full Payload")
+        st.markdown("### Full API Payload")
         st.json(payload)
 
         # API Call and response handling
@@ -166,12 +175,23 @@ if st.button("Send"):
                 steered_chat[-1]["content"] if steered_chat and steered_chat[-1]["role"] == "model" else "No response"
             )
 
-            # Display the responses
+            # Ensure user sees the steered response in context of features used
             st.markdown("### Default Model Response")
             st.write(default_response)
 
-            st.markdown("### Steered Model Response")
-            st.write(steered_response)
+            st.markdown("### Steered Model Response (Influenced by Features)")
+            if steered_response != "No response" and features:
+                st.write(f"**Steered response generated using features:**")
+                for feature in features:
+                    st.markdown(
+                        f"- **Layer**: `{feature['layer']}`<br>"
+                        f"  **Index**: `{feature['index']}`<br>"
+                        f"  **Strength**: {feature['strength']}",
+                        unsafe_allow_html=True,
+                    )
+                st.write(steered_response)
+            else:
+                st.warning("Steered response does not appear to be influenced by selected features.")
 
             # Add user input and responses to memory
             st.session_state.default_memory.chat_memory.add_user_message(user_input)
@@ -184,6 +204,7 @@ if st.button("Send"):
             st.error(f"API request failed: {e}")
         except (IndexError, TypeError, KeyError) as e:
             st.error(f"Error parsing API response: {e}")
+
 
 
 # Display Chat History
