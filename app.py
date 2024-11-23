@@ -1,4 +1,4 @@
-# File: steer_chatbot.py  
+# File: steer_chatbot.py
 
 import streamlit as st
 import requests
@@ -47,7 +47,7 @@ if st.sidebar.button("Search"):
                         "description": exp["description"],
                         "layer": exp["layer"],
                         "index": exp["index"],
-                        "strength": exp.get("strength", 0),  # Default strength to 0 if not provided
+                        "strength": exp.get("strength", 40),  # Default strength to 40 if not provided
                     }
                     for exp in explanations
                 ]
@@ -81,7 +81,7 @@ if st.session_state.selected_features:
             f"Strength for '{feature['description']}'",
             min_value=-100,
             max_value=100,
-            value=feature["strength"],  # Use the strength from the API response
+            value=feature["strength"],  # Use the strength from the API response or default
             key=f"strength_{feature['description']}",
         )
         st.sidebar.markdown(
@@ -119,6 +119,9 @@ if st.button("Send"):
             }
             for feature in st.session_state.selected_features
         ]
+
+        # Log features to the console for debugging
+        print("Features being sent:", features)
 
         # Prepare API payload
         payload = {
