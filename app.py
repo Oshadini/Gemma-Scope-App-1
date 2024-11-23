@@ -106,6 +106,7 @@ steer_special_tokens = st.sidebar.checkbox("Steer Special Tokens", value=True)
 
 # Chat interface
 # Chat interface
+# Chat interface
 st.markdown("### Chat Interface")
 user_input = st.text_input("Your Message:", key="user_input")
 if st.button("Send"):
@@ -121,7 +122,7 @@ if st.button("Send"):
             for feature in st.session_state.selected_features
         ]
 
-        # Show the features being sent to the user
+        # Display the features being sent to the user
         st.markdown("### Features Being Sent")
         st.json(features)
 
@@ -143,6 +144,10 @@ if st.button("Send"):
             "steer_special_tokens": steer_special_tokens,
         }
 
+        # Display the full payload being sent
+        st.markdown("### Full Payload")
+        st.json(payload)
+
         # API Call and response handling
         try:
             response = requests.post(API_URL, json=payload, headers=HEADERS)
@@ -161,6 +166,13 @@ if st.button("Send"):
                 steered_chat[-1]["content"] if steered_chat and steered_chat[-1]["role"] == "model" else "No response"
             )
 
+            # Display the responses
+            st.markdown("### Default Model Response")
+            st.write(default_response)
+
+            st.markdown("### Steered Model Response")
+            st.write(steered_response)
+
             # Add user input and responses to memory
             st.session_state.default_memory.chat_memory.add_user_message(user_input)
             st.session_state.default_memory.chat_memory.add_ai_message(default_response)
@@ -172,6 +184,7 @@ if st.button("Send"):
             st.error(f"API request failed: {e}")
         except (IndexError, TypeError, KeyError) as e:
             st.error(f"Error parsing API response: {e}")
+
 
 # Display Chat History
 col1, col2 = st.columns(2)
