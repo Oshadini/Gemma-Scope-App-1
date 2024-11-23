@@ -77,33 +77,21 @@ if st.session_state.available_descriptions:
 # Display selected descriptions with sliders for strength adjustment and remove buttons
 st.sidebar.markdown("### Selected Features")
 if st.session_state.selected_features:
-    to_remove = []
-    for feature in st.session_state.selected_features:
-        # Slider for strength adjustment
+    for i, feature in enumerate(st.session_state.selected_features):
         feature["strength"] = st.sidebar.slider(
             f"Strength for '{feature['description']}'",
             min_value=-100,
             max_value=100,
-            value=feature["strength"],  # Default to 40 if not already set
+            value=feature["strength"],
             key=f"strength_{feature['description']}",
         )
-        # Remove button
         if st.sidebar.button(f"Remove '{feature['description']}'", key=f"remove_{feature['description']}"):
-            to_remove.append(feature)
-
-        st.sidebar.markdown(
-            f"- **Description**: {feature['description']}<br>"
-            f"  **Layer**: {feature['layer']}<br>"
-            f"  **Index**: {feature['index']}",
-            unsafe_allow_html=True,
-        )
-    # Remove features flagged for removal
-    for feature in to_remove:
-        st.session_state.selected_features.remove(feature)
+            del st.session_state.selected_features[i]
+            st.experimental_rerun()  # Refresh the app after removing a feature
 else:
     st.sidebar.markdown("No features selected yet.")
 
-# User input for other settings
+# User input for features
 temperature = st.sidebar.slider("Temperature", 0.0, 1.0, 0.5)
 n_tokens = st.sidebar.number_input("Tokens", value=48, step=1)
 freq_penalty = st.sidebar.number_input("Frequency Penalty", value=2, step=1)
