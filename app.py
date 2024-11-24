@@ -59,7 +59,6 @@ if st.sidebar.button("Search"):
         st.sidebar.error("Query must be at least 3 characters long.")
 
 # Handle description selection
-# Handle description selection
 if st.session_state.available_descriptions:
     descriptions = [desc["description"] for desc in st.session_state.available_descriptions]
     selected_description = st.sidebar.selectbox("Select an explanation", [""] + descriptions, key="description_select")
