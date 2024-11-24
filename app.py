@@ -224,4 +224,8 @@ with col1:
 # Display Steered Model Chat
 with col2:
     st.subheader("Steered Model Chat")
-    for message in st.session_state.steered_memory
+    for message in st.session_state.steered_memory.chat_memory.messages:
+        if isinstance(message, HumanMessage):
+            st.markdown(f"**👤 User:** {message.content}")
+        elif isinstance(message, AIMessage):
+            st.markdown(f"**🤖 Steered Model:** {message.content}")
