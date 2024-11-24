@@ -76,24 +76,29 @@ if st.session_state.available_descriptions:
 # Display selected descriptions with sliders and remove buttons
 st.sidebar.markdown("### Selected Features")
 if st.session_state.selected_features:
-    indices_to_remove = []
+    updated_features = []
     for i, feature in enumerate(st.session_state.selected_features):
         col1, col2 = st.sidebar.columns([4, 1])  # Create two columns for slider and button
+        remove_clicked = False
         with col1:
-            feature["strength"] = st.slider(
-                f"Strength for '{feature['description']}'",
-                min_value=-100,
-                max_value=100,
-                value=feature["strength"],
-                key=f"strength_{feature['description']}",
-            )
+            # Show the slider only if the feature is not marked for removal
+            if feature not in updated_features:
+                feature["strength"] = st.slider(
+                    f"Strength for '{feature['description']}'",
+                    min_value=-100,
+                    max_value=100,
+                    value=feature["strength"],
+                    key=f"strength_{feature['description']}",
+                )
         with col2:
             if st.button("Remove", key=f"remove_{feature['description']}"):
-                indices_to_remove.append(i)
+                remove_clicked = True
+        # Add the feature to updated_features if not removed
+        if not remove_clicked:
+            updated_features.append(feature)
 
-    # Remove selected features after rendering
-    for index in sorted(indices_to_remove, reverse=True):
-        st.session_state.selected_features.pop(index)
+    # Update session state with the remaining features
+    st.session_state.selected_features = updated_features
 else:
     st.sidebar.markdown("No features selected yet.")
 
