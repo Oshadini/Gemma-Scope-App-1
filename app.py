@@ -14,8 +14,8 @@ if "selected_features" not in st.session_state:
     st.session_state.selected_features = []  # To store selected descriptions, layer, index, and strength
 if "available_descriptions" not in st.session_state:
     st.session_state.available_descriptions = []  # To temporarily store descriptions for a query
-if "show_dropdown" not in st.session_state:
-    st.session_state.show_dropdown = False  # To control the visibility of the dropdown
+if "explanation_selected" not in st.session_state:
+    st.session_state.explanation_selected = False  # Tracks if an explanation is selected
 
 # API details
 API_URL = "https://www.neuronpedia.org/api/steer-chat"
@@ -35,6 +35,9 @@ query = st.sidebar.text_input("Enter Query:", key="query_input", placeholder="Se
 if st.sidebar.button("Search"):
     if len(query) >= 3:
         try:
+            # Reset explanation selection state
+            st.session_state.explanation_selected = False
+            
             # Call the Search API
             search_payload = {"modelId": MODEL_ID, "query": query}
             search_response = requests.post(SEARCH_API_URL, json=search_payload, headers=HEADERS)
@@ -53,7 +56,6 @@ if st.sidebar.button("Search"):
                     }
                     for exp in explanations
                 ]
-                st.session_state.show_dropdown = True  # Show dropdown after a search
             else:
                 st.sidebar.error("No explanations found.")
         except requests.exceptions.RequestException as e:
@@ -62,7 +64,7 @@ if st.sidebar.button("Search"):
         st.sidebar.error("Query must be at least 3 characters long.")
 
 # Handle description selection
-if st.session_state.show_dropdown and st.session_state.available_descriptions:
+if st.session_state.available_descriptions and not st.session_state.explanation_selected:
     descriptions = [desc["description"] for desc in st.session_state.available_descriptions]
     selected_description = st.sidebar.selectbox("Select an explanation", [""] + descriptions)
     if selected_description:
@@ -74,7 +76,7 @@ if st.session_state.show_dropdown and st.session_state.available_descriptions:
         if feature and feature not in st.session_state.selected_features:
             st.session_state.selected_features.append(feature)
             st.session_state.available_descriptions = []  # Clear temporary storage after selection
-            st.session_state.show_dropdown = False  # Hide dropdown after selection
+            st.session_state.explanation_selected = True  # Explanation is selected
             st.sidebar.success(f"Feature added: {selected_description}")
 
 # Display selected descriptions with sliders and remove buttons
@@ -105,70 +107,3 @@ if st.session_state.selected_features:
     st.session_state.selected_features = updated_features
 else:
     st.sidebar.markdown("No features selected yet.")
-
-# User input for other settings
-temperature = st.sidebar.slider("Temperature", 0.0, 1.0, 0.5)
-n_tokens = st.sidebar.number_input("Tokens", value=48, step=1)
-freq_penalty = st.sidebar.number_input("Frequency Penalty", value=2, step=1)
-seed = st.sidebar.number_input("Seed", value=16, step=1)
-strength_multiplier = st.sidebar.number_input("Strength Multiplier", value=4, step=1)
-steer_special_tokens = st.sidebar.checkbox("Steer Special Tokens", value=True)
-
-# Chat interface
-st.markdown("### Chat Interface")
-user_input = st.text_input("Your Message:", key="user_input")
-if st.button("Send"):
-    if user_input:
-        # Prepare features for the API payload
-        features = [
-            {
-                "modelId": MODEL_ID,
-                "layer": feature["layer"],
-                "index": feature["index"],
-                "strength": feature["strength"],  # Use slider-adjusted strength
-            }
-            for feature in st.session_state.selected_features
-        ]
-
-        # Prepare API payload
-        payload = {
-            "defaultChatMessages": [
-                {"role": "user", "content": user_input}
-            ],
-            "steeredChatMessages": [
-                {"role": "user", "content": user_input}
-            ],
-            "modelId": MODEL_ID,
-            "features": features,
-            "temperature": temperature,
-            "n_tokens": n_tokens,
-            "freq_penalty": freq_penalty,
-            "seed": seed,
-            "strength_multiplier": strength_multiplier,
-            "steer_special_tokens": steer_special_tokens,
-        }
-
-        # API Call and response handling
-        try:
-            response = requests.post(API_URL, json=payload, headers=HEADERS)
-            response.raise_for_status()
-            data = response.json()
-
-            # Parse Default and Steered chat templates
-            default_chat = data.get("DEFAULT", {}).get("chat_template", [])
-            steered_chat = data.get("STEERED", {}).get("chat_template", [])
-
-            # Display responses
-            st.markdown("### Default Model Response")
-            st.write(default_chat[-1]["content"] if default_chat else "No response")
-
-            st.markdown("### Steered Model Response")
-            if features:
-                for feature in features:
-                    st.markdown(f"- {feature['layer']}:{feature['index']} - {feature['strength']}")
-                st.write(steered_chat[-1]["content"] if steered_chat else "No response")
-            else:
-                st.warning("No features selected. Steered response may not be influenced.")
-
-        except requests.exceptions.RequestException as e:
-            st.error(f"API request failed: {e}")
