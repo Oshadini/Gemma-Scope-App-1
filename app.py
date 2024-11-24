@@ -76,7 +76,7 @@ if st.session_state.available_descriptions:
 # Display selected descriptions with sliders and remove buttons
 st.sidebar.markdown("### Selected Features")
 if st.session_state.selected_features:
-    to_remove = []  # List to track features to remove
+    indices_to_remove = []
     for i, feature in enumerate(st.session_state.selected_features):
         col1, col2 = st.sidebar.columns([4, 1])  # Create two columns for slider and button
         with col1:
@@ -89,11 +89,11 @@ if st.session_state.selected_features:
             )
         with col2:
             if st.button("Remove", key=f"remove_{feature['description']}"):
-                to_remove.append(i)  # Mark for removal
+                indices_to_remove.append(i)
 
-    # Remove the marked features from the session state
-    for index in sorted(to_remove, reverse=True):
-        del st.session_state.selected_features[index]
+    # Remove selected features after rendering
+    for index in sorted(indices_to_remove, reverse=True):
+        st.session_state.selected_features.pop(index)
 else:
     st.sidebar.markdown("No features selected yet.")
 
