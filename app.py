@@ -76,14 +76,15 @@ if st.session_state.available_descriptions:
             st.sidebar.success(f"Feature added: {selected_description}")
 
 # Display selected descriptions with sliders and remove buttons
+# Display selected descriptions with sliders and remove buttons
 st.sidebar.markdown("### Selected Features")
 if st.session_state.selected_features:
     updated_features = []
-    for i, feature in enumerate(st.session_state.selected_features):
+    for feature in st.session_state.selected_features:
         col1, col2 = st.sidebar.columns([4, 1])  # Create two columns for slider and button
         remove_clicked = False
         with col1:
-            # Show the slider only if the feature is not marked for removal
+            # Display slider only if the feature is not marked for removal
             if feature not in updated_features:
                 feature["strength"] = st.slider(
                     f"Strength for '{feature['description']}'",
@@ -95,9 +96,8 @@ if st.session_state.selected_features:
         with col2:
             if st.button("Remove", key=f"remove_{feature['description']}"):
                 remove_clicked = True
-                st.session_state[f"strength_{feature['description']}"] = None  # Remove slider immediately
 
-        # Add the feature to updated_features if not removed
+        # If the remove button is clicked, exclude the feature
         if not remove_clicked:
             updated_features.append(feature)
 
@@ -105,6 +105,7 @@ if st.session_state.selected_features:
     st.session_state.selected_features = updated_features
 else:
     st.sidebar.markdown("No features selected yet.")
+
 
 # User input for other settings
 temperature = st.sidebar.slider("Temperature", 0.0, 1.0, 0.5)
