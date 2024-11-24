@@ -222,4 +222,4 @@ with col2:
         if isinstance(message, HumanMessage):
             st.markdown(f"**👤 User:** {message.content}")
         elif isinstance(message, AIMessage):
-            st.markdown(f"**
+            st.markdown(f"**🤖 Steered Model:** {message.content}")
