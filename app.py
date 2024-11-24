@@ -73,30 +73,26 @@ if st.session_state.available_descriptions:
             st.session_state.available_descriptions = []  # Clear temporary storage after selection
             st.sidebar.success(f"Feature added: {selected_description}")
 
-# Display selected descriptions with sliders for strength adjustment
+# Display selected descriptions with sliders and remove buttons
 st.sidebar.markdown("### Selected Features")
 if st.session_state.selected_features:
-    for feature in st.session_state.selected_features:
-        feature["strength"] = st.sidebar.slider(
-            f"Strength for '{feature['description']}'",
-            min_value=-100,
-            max_value=100,
-            value=feature["strength"],  # Use the strength from the API response or default
-            key=f"strength_{feature['description']}",
-        )
-        st.sidebar.markdown(
-            f"- **Description**: {feature['description']}<br>"
-            f"  **Layer**: {feature['layer']}<br>"
-            f"  **Index**: {feature['index']}",
-            unsafe_allow_html=True,
-        )
+    for i, feature in enumerate(st.session_state.selected_features):
+        col1, col2 = st.sidebar.columns([4, 1])  # Create two columns for slider and button
+        with col1:
+            feature["strength"] = st.slider(
+                f"Strength for '{feature['description']}'",
+                min_value=-100,
+                max_value=100,
+                value=feature["strength"],
+                key=f"strength_{feature['description']}",
+            )
+        with col2:
+            if st.button("Remove", key=f"remove_{feature['description']}"):
+                st.session_state.selected_features.pop(i)
 else:
     st.sidebar.markdown("No features selected yet.")
 
-# User input for features
-layer = st.sidebar.text_input("Layer", value="9-gemmascope-res-131k")
-index = st.sidebar.number_input("Index", value=62610, step=1)
-strength = st.sidebar.number_input("Strength", value=48, step=1)
+# User input for other settings
 temperature = st.sidebar.slider("Temperature", 0.0, 1.0, 0.5)
 n_tokens = st.sidebar.number_input("Tokens", value=48, step=1)
 freq_penalty = st.sidebar.number_input("Frequency Penalty", value=2, step=1)
@@ -104,9 +100,6 @@ seed = st.sidebar.number_input("Seed", value=16, step=1)
 strength_multiplier = st.sidebar.number_input("Strength Multiplier", value=4, step=1)
 steer_special_tokens = st.sidebar.checkbox("Steer Special Tokens", value=True)
 
-# Chat interface
-# Chat interface
-# Chat interface
 # Chat interface
 st.markdown("### Chat Interface")
 user_input = st.text_input("Your Message:", key="user_input")
@@ -204,8 +197,6 @@ if st.button("Send"):
             st.error(f"API request failed: {e}")
         except (IndexError, TypeError, KeyError) as e:
             st.error(f"Error parsing API response: {e}")
-
-
 
 # Display Chat History
 col1, col2 = st.columns(2)
