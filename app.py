@@ -61,7 +61,8 @@ if st.sidebar.button("Search"):
 # Handle description selection
 if st.session_state.available_descriptions:
     descriptions = [desc["description"] for desc in st.session_state.available_descriptions]
-    selected_description = st.sidebar.selectbox("Select an explanation", [""] + descriptions)
+    selected_description = st.sidebar.selectbox("Select an explanation", [""] + descriptions, key="description_select")
+
     if selected_description:
         # Find the corresponding feature and add it to the selected features
         feature = next(
@@ -71,8 +72,8 @@ if st.session_state.available_descriptions:
         if feature and feature not in st.session_state.selected_features:
             st.session_state.selected_features.append(feature)
             st.session_state.available_descriptions = []  # Clear temporary storage after selection
+            del st.session_state["description_select"]  # Remove dropdown from UI
             st.sidebar.success(f"Feature added: {selected_description}")
-            st.sidebar.empty()  # Remove dropdown after selection
 
 # Display selected descriptions with sliders and remove buttons
 st.sidebar.markdown("### Selected Features")
@@ -94,6 +95,8 @@ if st.session_state.selected_features:
         with col2:
             if st.button("Remove", key=f"remove_{feature['description']}"):
                 remove_clicked = True
+                st.session_state[f"strength_{feature['description']}"] = None  # Remove slider immediately
+
         # Add the feature to updated_features if not removed
         if not remove_clicked:
             updated_features.append(feature)
