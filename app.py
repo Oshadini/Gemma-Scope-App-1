@@ -14,6 +14,8 @@ if "selected_features" not in st.session_state:
     st.session_state.selected_features = []  # To store selected descriptions, layer, index, and strength
 if "available_descriptions" not in st.session_state:
     st.session_state.available_descriptions = []  # To temporarily store descriptions for a query
+if "show_dropdown" not in st.session_state:
+    st.session_state.show_dropdown = False  # To control the visibility of the dropdown
 
 # API details
 API_URL = "https://www.neuronpedia.org/api/steer-chat"
@@ -51,6 +53,7 @@ if st.sidebar.button("Search"):
                     }
                     for exp in explanations
                 ]
+                st.session_state.show_dropdown = True  # Show dropdown after a search
             else:
                 st.sidebar.error("No explanations found.")
         except requests.exceptions.RequestException as e:
@@ -59,7 +62,7 @@ if st.sidebar.button("Search"):
         st.sidebar.error("Query must be at least 3 characters long.")
 
 # Handle description selection
-if st.session_state.available_descriptions:
+if st.session_state.show_dropdown and st.session_state.available_descriptions:
     descriptions = [desc["description"] for desc in st.session_state.available_descriptions]
     selected_description = st.sidebar.selectbox("Select an explanation", [""] + descriptions)
     if selected_description:
@@ -71,6 +74,7 @@ if st.session_state.available_descriptions:
         if feature and feature not in st.session_state.selected_features:
             st.session_state.selected_features.append(feature)
             st.session_state.available_descriptions = []  # Clear temporary storage after selection
+            st.session_state.show_dropdown = False  # Hide dropdown after selection
             st.sidebar.success(f"Feature added: {selected_description}")
 
 # Display selected descriptions with sliders and remove buttons
@@ -126,18 +130,6 @@ if st.button("Send"):
             for feature in st.session_state.selected_features
         ]
 
-        # Display the selected features and their context
-        st.markdown("### Selected Features (For Steering)")
-        if features:
-            for feature in features:
-                st.markdown(
-                    f"- **Description Context**: `{feature['layer']}:{feature['index']}`<br>"
-                    f"  **Strength**: {feature['strength']}",
-                    unsafe_allow_html=True,
-                )
-        else:
-            st.error("No features selected. Steered response may not be influenced.")
-
         # Prepare API payload
         payload = {
             "defaultChatMessages": [
@@ -156,10 +148,6 @@ if st.button("Send"):
             "steer_special_tokens": steer_special_tokens,
         }
 
-        # Display the full payload being sent
-        st.markdown("### Full API Payload")
-        st.json(payload)
-
         # API Call and response handling
         try:
             response = requests.post(API_URL, json=payload, headers=HEADERS)
@@ -170,61 +158,17 @@ if st.button("Send"):
             default_chat = data.get("DEFAULT", {}).get("chat_template", [])
             steered_chat = data.get("STEERED", {}).get("chat_template", [])
 
-            # Extract the latest model response for default and steered
-            default_response = (
-                default_chat[-1]["content"] if default_chat and default_chat[-1]["role"] == "model" else "No response"
-            )
-            steered_response = (
-                steered_chat[-1]["content"] if steered_chat and steered_chat[-1]["role"] == "model" else "No response"
-            )
-
-            # Ensure user sees the steered response in context of features used
+            # Display responses
             st.markdown("### Default Model Response")
-            st.write(default_response)
+            st.write(default_chat[-1]["content"] if default_chat else "No response")
 
-            st.markdown("### Steered Model Response (Influenced by Features)")
-            if steered_response != "No response" and features:
-                st.write(f"**Steered response generated using features:**")
+            st.markdown("### Steered Model Response")
+            if features:
                 for feature in features:
-                    st.markdown(
-                        f"- **Layer**: `{feature['layer']}`<br>"
-                        f"  **Index**: `{feature['index']}`<br>"
-                        f"  **Strength**: {feature['strength']}",
-                        unsafe_allow_html=True,
-                    )
-                st.write(steered_response)
+                    st.markdown(f"- {feature['layer']}:{feature['index']} - {feature['strength']}")
+                st.write(steered_chat[-1]["content"] if steered_chat else "No response")
             else:
-                st.warning("Steered response does not appear to be influenced by selected features.")
-
-            # Add user input and responses to memory
-            st.session_state.default_memory.chat_memory.add_user_message(user_input)
-            st.session_state.default_memory.chat_memory.add_ai_message(default_response)
-
-            st.session_state.steered_memory.chat_memory.add_user_message(user_input)
-            st.session_state.steered_memory.chat_memory.add_ai_message(steered_response)
+                st.warning("No features selected. Steered response may not be influenced.")
 
         except requests.exceptions.RequestException as e:
             st.error(f"API request failed: {e}")
-        except (IndexError, TypeError, KeyError) as e:
-            st.error(f"Error parsing API response: {e}")
-
-# Display Chat History
-col1, col2 = st.columns(2)
-
-# Display Default Model Chat
-with col1:
-    st.subheader("Default Model Chat")
-    for message in st.session_state.default_memory.chat_memory.messages:
-        if isinstance(message, HumanMessage):
-            st.markdown(f"**👤 User:** {message.content}")
-        elif isinstance(message, AIMessage):
-            st.markdown(f"**🤖 Default Model:** {message.content}")
-
-# Display Steered Model Chat
-with col2:
-    st.subheader("Steered Model Chat")
-    for message in st.session_state.steered_memory.chat_memory.messages:
-        if isinstance(message, HumanMessage):
-            st.markdown(f"**👤 User:** {message.content}")
-        elif isinstance(message, AIMessage):
-            st.markdown(f"**🤖 Steered Model:** {message.content}")
