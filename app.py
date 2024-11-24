@@ -76,9 +76,9 @@ if st.session_state.available_descriptions:
 # Display selected descriptions with sliders and remove buttons
 st.sidebar.markdown("### Selected Features")
 if st.session_state.selected_features:
+    to_remove = []  # List to track features to remove
     for i, feature in enumerate(st.session_state.selected_features):
-        # Create two columns for slider and button
-        col1, col2 = st.sidebar.columns([4, 1])
+        col1, col2 = st.sidebar.columns([4, 1])  # Create two columns for slider and button
         with col1:
             feature["strength"] = st.slider(
                 f"Strength for '{feature['description']}'",
@@ -89,13 +89,15 @@ if st.session_state.selected_features:
             )
         with col2:
             if st.button("Remove", key=f"remove_{feature['description']}"):
-                # Remove the selected feature and re-render immediately
-                st.session_state.selected_features.pop(i)
-                st.experimental_rerun()
+                to_remove.append(i)  # Mark for removal
+
+    # Remove the marked features from the session state
+    for index in sorted(to_remove, reverse=True):
+        del st.session_state.selected_features[index]
 else:
     st.sidebar.markdown("No features selected yet.")
 
-# Remaining user input fields and chat functionality (unchanged)
+# User input for other settings
 temperature = st.sidebar.slider("Temperature", 0.0, 1.0, 0.5)
 n_tokens = st.sidebar.number_input("Tokens", value=48, step=1)
 freq_penalty = st.sidebar.number_input("Frequency Penalty", value=2, step=1)
@@ -220,4 +222,4 @@ with col2:
         if isinstance(message, HumanMessage):
             st.markdown(f"**👤 User:** {message.content}")
         elif isinstance(message, AIMessage):
-            st.markdown(f"**🤖 Steered Model:** {message.content}")
+            st.markdown(f"**
