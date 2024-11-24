@@ -72,6 +72,7 @@ if st.session_state.available_descriptions:
             st.session_state.selected_features.append(feature)
             st.session_state.available_descriptions = []  # Clear temporary storage after selection
             st.sidebar.success(f"Feature added: {selected_description}")
+            st.sidebar.empty()  # Remove dropdown after selection
 
 # Display selected descriptions with sliders and remove buttons
 st.sidebar.markdown("### Selected Features")
@@ -223,8 +224,4 @@ with col1:
 # Display Steered Model Chat
 with col2:
     st.subheader("Steered Model Chat")
-    for message in st.session_state.steered_memory.chat_memory.messages:
-        if isinstance(message, HumanMessage):
-            st.markdown(f"**👤 User:** {message.content}")
-        elif isinstance(message, AIMessage):
-            st.markdown(f"**🤖 Steered Model:** {message.content}")
+    for message in st.session_state.steered_memory
