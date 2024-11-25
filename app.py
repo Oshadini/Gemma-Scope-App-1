@@ -81,6 +81,7 @@ if st.session_state.available_descriptions:
 # Display selected features with sliders and remove buttons
 # Display selected features with sliders and remove buttons
 # Display selected features with sliders and remove buttons
+# Display selected features with sliders and remove buttons
 st.sidebar.markdown("### 🎛 Selected Features")
 
 if st.session_state.selected_features:
@@ -101,17 +102,26 @@ if st.session_state.selected_features:
 
             # Display the remove button
             with col2:
-                if st.button("❌", key=f"remove_{feature['description']}"):
-                    # Remove the feature from the session state
-                    st.session_state.selected_features = [
-                        f for f in st.session_state.selected_features if f != feature
-                    ]
-                    # Clear the specific slider key
-                    if f"strength_{feature['description']}" in st.session_state:
-                        del st.session_state[f"strength_{feature['description']}"]
+                button_key = f"remove_{feature['description']}"
+                # Check if the button has already been clicked
+                if button_key not in st.session_state:
+                    st.session_state[button_key] = False
+
+                # Show the button if it hasn't been clicked
+                if not st.session_state[button_key]:
+                    if st.button("❌", key=button_key):
+                        st.session_state[button_key] = True  # Mark the button as clicked
+                        # Remove the feature from the session state
+                        st.session_state.selected_features = [
+                            f for f in st.session_state.selected_features if f != feature
+                        ]
+                        # Clear the specific slider key
+                        if f"strength_{feature['description']}" in st.session_state:
+                            del st.session_state[f"strength_{feature['description']}"]
 
 else:
     st.sidebar.info("No features selected yet.")
+
 
 
 # Chat Settings
