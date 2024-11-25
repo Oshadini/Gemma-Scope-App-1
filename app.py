@@ -79,23 +79,36 @@ if st.session_state.available_descriptions:
             st.sidebar.success(f"Feature added: {selected_description}")
 
 # Display selected features with sliders and remove buttons
+# Display selected features with sliders and remove buttons
 st.sidebar.markdown("### 🎛 Selected Features")
+
 if st.session_state.selected_features:
     for feature in st.session_state.selected_features:
-        col1, col2 = st.sidebar.columns([4, 1])
-        with col1:
-            st.slider(
-                feature["description"],
-                min_value=-100,
-                max_value=100,
-                value=feature["strength"],
-                key=f"strength_{feature['description']}",
-            )
-        with col2:
-            if st.button("❌", key=f"remove_{feature['description']}"):
-                st.session_state.selected_features.remove(feature)
+        # Use a container to group the slider and the remove button
+        with st.sidebar.container():
+            col1, col2 = st.sidebar.columns([4, 1])  # Create two columns: one for the slider, one for the button
+            
+            # Display the slider
+            with col1:
+                st.slider(
+                    feature["description"],
+                    min_value=-100,
+                    max_value=100,
+                    value=feature["strength"],
+                    key=f"strength_{feature['description']}",
+                )
+            
+            # Display the remove button
+            with col2:
+                if st.button("❌", key=f"remove_{feature['description']}"):
+                    # Remove the feature from the session state
+                    st.session_state.selected_features = [
+                        f for f in st.session_state.selected_features if f != feature
+                    ]
+                    st.experimental_rerun()  # Refresh the app to reflect the changes
 else:
     st.sidebar.info("No features selected yet.")
+
 
 # Chat Settings
 st.sidebar.markdown("### ⚙️ Chat Settings")
