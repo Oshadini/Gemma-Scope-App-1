@@ -106,7 +106,8 @@ if st.session_state.selected_features:
 
             # Display the remove button
             with col2:
-                button_key = f"remove_{feature['description']}"
+                #button_key = f"remove_{feature['description']}"
+                button_key = f"strength_{feature['description']}
                 
                 # Show the button and check if clicked
                 if st.button("❌", key=button_key):
