@@ -82,16 +82,18 @@ if st.session_state.available_descriptions:
 st.sidebar.markdown("### 🎛 Selected Features")
 if st.session_state.selected_features:
     for feature in st.session_state.selected_features:
-        st.sidebar.slider(
-            f"{feature['description']}",
-            min_value=-100,
-            max_value=100,
-            value=feature["strength"],
-            key=f"strength_{feature['description']}",
-        )
-        if st.sidebar.button("❌ Remove", key=f"remove_{feature['description']}"):
-            st.session_state.selected_features.remove(feature)
-            st.sidebar.warning(f"Feature removed: {feature['description']}")
+        col1, col2 = st.sidebar.columns([4, 1])
+        with col1:
+            st.sidebar.slider(
+                f"{feature['description']}",
+                min_value=-100,
+                max_value=100,
+                value=feature["strength"],
+                key=f"strength_{feature['description']}",
+            )
+        with col2:
+            if st.sidebar.button("❌", key=f"remove_{feature['description']}"):
+                st.session_state.selected_features.remove(feature)
 else:
     st.sidebar.info("No features selected yet.")
 
@@ -106,64 +108,58 @@ steer_special_tokens = st.sidebar.checkbox("Steer Special Tokens", value=True)
 
 # Main Chat Interface
 st.markdown("### 💬 Chat Interface")
-col1, col2 = st.columns([2, 1])
+messages = st.container()
+user_input = st.text_input("Your Message:", key="user_input", placeholder="Type a message...")
 
-with col1:
-    st.markdown("#### Chat Conversation")
-    user_input = st.text_input("Your Message:", key="user_input", placeholder="Type a message...")
-    if st.button("Send 📨"):
-        if user_input:
-            features = [
-                {
-                    "modelId": MODEL_ID,
-                    "layer": feature["layer"],
-                    "index": feature["index"],
-                    "strength": feature["strength"],
-                }
-                for feature in st.session_state.selected_features
-            ]
-            payload = {
-                "defaultChatMessages": [{"role": "user", "content": user_input}],
-                "steeredChatMessages": [{"role": "user", "content": user_input}],
+if st.button("Send 📨", key="send_button"):
+    if user_input:
+        features = [
+            {
                 "modelId": MODEL_ID,
-                "features": features,
-                "temperature": temperature,
-                "n_tokens": n_tokens,
-                "freq_penalty": freq_penalty,
-                "seed": seed,
-                "strength_multiplier": strength_multiplier,
-                "steer_special_tokens": steer_special_tokens,
+                "layer": feature["layer"],
+                "index": feature["index"],
+                "strength": feature["strength"],
             }
-            try:
-                response = requests.post(API_URL, json=payload, headers=HEADERS)
-                response.raise_for_status()
-                data = response.json()
+            for feature in st.session_state.selected_features
+        ]
+        payload = {
+            "defaultChatMessages": [{"role": "user", "content": user_input}],
+            "steeredChatMessages": [{"role": "user", "content": user_input}],
+            "modelId": MODEL_ID,
+            "features": features,
+            "temperature": temperature,
+            "n_tokens": n_tokens,
+            "freq_penalty": freq_penalty,
+            "seed": seed,
+            "strength_multiplier": strength_multiplier,
+            "steer_special_tokens": steer_special_tokens,
+        }
+        try:
+            response = requests.post(API_URL, json=payload, headers=HEADERS)
+            response.raise_for_status()
+            data = response.json()
 
-                # Display responses
-                default_response = data.get("DEFAULT", {}).get("chat_template", [])[-1].get("content", "No response")
-                steered_response = data.get("STEERED", {}).get("chat_template", [])[-1].get("content", "No response")
+            # Display responses
+            default_response = data.get("DEFAULT", {}).get("chat_template", [])[-1].get("content", "No response")
+            steered_response = data.get("STEERED", {}).get("chat_template", [])[-1].get("content", "No response")
 
-                st.session_state.default_memory.chat_memory.add_user_message(user_input)
-                st.session_state.default_memory.chat_memory.add_ai_message(default_response)
-                st.session_state.steered_memory.chat_memory.add_user_message(user_input)
-                st.session_state.steered_memory.chat_memory.add_ai_message(steered_response)
+            st.session_state.default_memory.chat_memory.add_user_message(user_input)
+            st.session_state.default_memory.chat_memory.add_ai_message(default_response)
+            st.session_state.steered_memory.chat_memory.add_user_message(user_input)
+            st.session_state.steered_memory.chat_memory.add_ai_message(steered_response)
 
-            except requests.exceptions.RequestException as e:
-                st.error(f"API request failed: {e}")
+        except requests.exceptions.RequestException as e:
+            st.error(f"API request failed: {e}")
 
 # Display Chat History
-with col1:
+with messages:
     st.markdown("#### Chat History")
     for message in st.session_state.default_memory.chat_memory.messages:
         if isinstance(message, HumanMessage):
-            st.markdown(f"**👤 User:** {message.content}")
+            st.chat_message("user").write(message.content)
         elif isinstance(message, AIMessage):
-            st.markdown(f"**🤖 Default Model:** {message.content}")
+            st.chat_message("assistant").write(message.content)
 
-with col2:
-    st.markdown("#### Steered Chat History")
     for message in st.session_state.steered_memory.chat_memory.messages:
-        if isinstance(message, HumanMessage):
-            st.markdown(f"**👤 User:** {message.content}")
-        elif isinstance(message, AIMessage):
-            st.markdown(f"**🤖 Steered Model:** {message.content}")
+        if isinstance(message, AIMessage):
+            st.chat_message("assistant").write(f"Steered: {message.content}")
