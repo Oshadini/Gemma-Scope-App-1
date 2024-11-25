@@ -80,6 +80,7 @@ if st.session_state.available_descriptions:
 
 # Display selected features with sliders and remove buttons
 # Display selected features with sliders and remove buttons
+# Display selected features with sliders and remove buttons
 st.sidebar.markdown("### 🎛 Selected Features")
 
 if st.session_state.selected_features:
@@ -87,7 +88,7 @@ if st.session_state.selected_features:
         # Use a container to group the slider and the remove button
         with st.sidebar.container():
             col1, col2 = st.sidebar.columns([4, 1])  # Create two columns: one for the slider, one for the button
-            
+
             # Display the slider
             with col1:
                 st.slider(
@@ -97,7 +98,7 @@ if st.session_state.selected_features:
                     value=feature["strength"],
                     key=f"strength_{feature['description']}",
                 )
-            
+
             # Display the remove button
             with col2:
                 if st.button("❌", key=f"remove_{feature['description']}"):
@@ -105,7 +106,10 @@ if st.session_state.selected_features:
                     st.session_state.selected_features = [
                         f for f in st.session_state.selected_features if f != feature
                     ]
-                    st.experimental_rerun()  # Refresh the app to reflect the changes
+                    # Clear the specific slider key
+                    if f"strength_{feature['description']}" in st.session_state:
+                        del st.session_state[f"strength_{feature['description']}"]
+
 else:
     st.sidebar.info("No features selected yet.")
 
