@@ -83,6 +83,9 @@ if st.session_state.available_descriptions:
 # Display selected features with sliders and remove buttons
 # Display selected features with sliders and remove buttons
 # Display selected features with sliders and remove buttons
+import streamlit as st
+
+# Display selected features with sliders and remove buttons
 st.sidebar.markdown("### 🎛 Selected Features")
 
 if st.session_state.selected_features:
@@ -105,7 +108,7 @@ if st.session_state.selected_features:
             with col2:
                 button_key = f"remove_{feature['description']}"
                 
-                # Show the button if the feature is still in the list
+                # Show the button and check if clicked
                 if st.button("❌", key=button_key):
                     # Remove the feature from the session state
                     st.session_state.selected_features = [
@@ -116,10 +119,11 @@ if st.session_state.selected_features:
                     if slider_key in st.session_state:
                         del st.session_state[slider_key]
 
-                    # Force rerun to refresh the UI
-                    st.experimental_rerun()
+                    # No need to rerun, the UI will naturally update after state change
+
 else:
     st.sidebar.info("No features selected yet.")
+
 
 
 
