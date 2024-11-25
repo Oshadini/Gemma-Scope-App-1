@@ -136,39 +136,55 @@ user_input = st.text_input(
 send_button = st.button("Send 📨", use_container_width=True)
 
 if send_button and user_input:
-    features = [
-        {
+    if user_input:
+        features = [
+            {
+                "modelId": MODEL_ID,
+                "layer": feature["layer"],
+                "index": feature["index"],
+                "strength": feature["strength"],
+            }
+            for feature in st.session_state.selected_features
+        ]
+
+        # Debugging: Log features being sent
+        st.write("**Features Sent to API:**", features)
+
+        payload = {
+            "defaultChatMessages": [{"role": "user", "content": user_input}],
+            "steeredChatMessages": [{"role": "user", "content": user_input}],
             "modelId": MODEL_ID,
-            "layer": feature["layer"],
-            "index": feature["index"],
-            "strength": feature["strength"],
+            "features": features,
+            "temperature": temperature,
+            "n_tokens": n_tokens,
+            "freq_penalty": freq_penalty,
+            "seed": seed,
+            "strength_multiplier": strength_multiplier,
+            "steer_special_tokens": steer_special_tokens,
         }
-        for feature in st.session_state.selected_features
-    ]
-    payload = {
-        "defaultChatMessages": [{"role": "user", "content": user_input}],
-        "steeredChatMessages": [{"role": "user", "content": user_input}],
-        "modelId": MODEL_ID,
-        "features": features,
-        "temperature": temperature,
-        "n_tokens": n_tokens,
-        "freq_penalty": freq_penalty,
-        "seed": seed,
-        "strength_multiplier": strength_multiplier,
-        "steer_special_tokens": steer_special_tokens,
-    }
-    try:
-        response = requests.post(API_URL, json=payload, headers=HEADERS)
-        response.raise_for_status()
-        data = response.json()
 
-        # Display responses
-        default_response = data.get("DEFAULT", {}).get("chat_template", [])[-1].get("content", "No response")
-        steered_response = data.get("STEERED", {}).get("chat_template", [])[-1].get("content", "No response")
+        try:
+            response = requests.post(API_URL, json=payload, headers=HEADERS)
+            response.raise_for_status()
+            data = response.json()
 
-        st.session_state.default_memory.chat_memory.add_user_message(user_input)
-        st.session_state.default_memory.chat_memory.add_ai_message(default_response)
-        st.session_state.steered_memory.chat_memory.add_user_message(user_input)
-        st.session_state.steered_memory.chat_memory.add_ai_message(steered_response)
-    except requests.exceptions.RequestException as e:
-        st.error(f"API request failed: {e}")
+            # Debugging: Log API response
+            st.write("**API Response:**", data)
+
+            # Display responses
+            default_response = data.get("DEFAULT", {}).get("chat_template", [])[-1].get("content", "No response")
+            steered_response = data.get("STEERED", {}).get("chat_template", [])[-1].get("content", "No response")
+
+            if not steered_response or steered_response == "No response":
+                st.warning("Steered response not generated or not influenced by selected features.")
+            else:
+                st.success("Steered response generated successfully!")
+
+            # Save responses in memory
+            st.session_state.default_memory.chat_memory.add_user_message(user_input)
+            st.session_state.default_memory.chat_memory.add_ai_message(default_response)
+            st.session_state.steered_memory.chat_memory.add_user_message(user_input)
+            st.session_state.steered_memory.chat_memory.add_ai_message(steered_response)
+
+        except requests.exceptions.RequestException as e:
+            st.error(f"API request failed: {e}")
