@@ -21,16 +21,19 @@ SEARCH_API_URL = "https://www.neuronpedia.org/api/explanation/search-model"
 MODEL_ID = "gemma-2-9b-it"
 HEADERS = {"Content-Type": "application/json", "X-Api-Key": "YOUR_TOKEN"}
 
-# Streamlit UI
-st.title("Steer With SAE Features (Chat)")
-st.sidebar.title("Settings")
+# Main Application UI
+st.set_page_config(page_title="Steer With SAE Features (Chat)", layout="wide")
+st.title("🚀 Steer Chatbot with SAE Features")
 
-# User input for search query
-st.sidebar.markdown("### Search for Explanations")
-query = st.sidebar.text_input("Enter Query:", key="query_input", placeholder="Search for explanations...")
+# Sidebar: Settings and Search
+st.sidebar.header("Settings")
+st.sidebar.markdown("Adjust the parameters below to customize the behavior of the chatbot.")
 
-# Search and display results
-if st.sidebar.button("Search"):
+# Search Query
+st.sidebar.markdown("### 🔍 Search for Explanations")
+query = st.sidebar.text_input("Enter your query:", key="query_input", placeholder="Type your query here...")
+
+if st.sidebar.button("Search 🔎"):
     if len(query) >= 3:
         try:
             # Call the Search API
@@ -41,7 +44,6 @@ if st.sidebar.button("Search"):
 
             explanations = search_data.get("results", [])
             if explanations:
-                # Extract and display explanation descriptions for user selection
                 st.session_state.available_descriptions = [
                     {
                         "description": exp["description"],
@@ -51,20 +53,21 @@ if st.sidebar.button("Search"):
                     }
                     for exp in explanations
                 ]
+                st.sidebar.success("Explanations loaded successfully!")
             else:
-                st.sidebar.error("No explanations found.")
+                st.sidebar.warning("No explanations found for the query.")
         except requests.exceptions.RequestException as e:
             st.sidebar.error(f"Search API request failed: {e}")
     else:
         st.sidebar.error("Query must be at least 3 characters long.")
 
-# Handle description selection
+# Feature Selection
 if st.session_state.available_descriptions:
     descriptions = [desc["description"] for desc in st.session_state.available_descriptions]
-    selected_description = st.sidebar.selectbox("Select an explanation", [""] + descriptions, key="description_select")
+    selected_description = st.sidebar.selectbox("Select an explanation:", [""] + descriptions, key="description_select")
 
     if selected_description:
-        # Find the corresponding feature and add it to the selected features
+        # Add selected feature
         feature = next(
             (desc for desc in st.session_state.available_descriptions if desc["description"] == selected_description),
             None,
@@ -75,160 +78,90 @@ if st.session_state.available_descriptions:
             del st.session_state["description_select"]  # Remove dropdown from UI
             st.sidebar.success(f"Feature added: {selected_description}")
 
-# Display selected descriptions with sliders and remove buttons
-st.sidebar.markdown("### Selected Features")
+# Display selected features with sliders
+st.sidebar.markdown("### 🎛 Selected Features")
 if st.session_state.selected_features:
-    updated_features = []
     for feature in st.session_state.selected_features:
-        col1, col2 = st.sidebar.columns([4, 1])  # Create two columns for slider and button
-        remove_clicked = False
-        with col1:
-            # Display slider only if the feature is not marked for removal
-            if feature not in updated_features:
-                feature["strength"] = st.slider(
-                    f"Strength for '{feature['description']}'",
-                    min_value=-100,
-                    max_value=100,
-                    value=feature["strength"],
-                    key=f"strength_{feature['description']}",
-                )
-        with col2:
-            if st.button("Remove", key=f"remove_{feature['description']}"):
-                remove_clicked = True
-
-        # If the remove button is clicked, exclude the feature
-        if not remove_clicked:
-            updated_features.append(feature)
-        else:
-            # Remove slider session state for the feature
-            del st.session_state[f"strength_{feature['description']}"]
-
-    # Update session state with the remaining features
-    st.session_state.selected_features = updated_features
+        st.sidebar.slider(
+            f"{feature['description']}",
+            min_value=-100,
+            max_value=100,
+            value=feature["strength"],
+            key=f"strength_{feature['description']}",
+        )
+        if st.sidebar.button("❌ Remove", key=f"remove_{feature['description']}"):
+            st.session_state.selected_features.remove(feature)
+            st.sidebar.warning(f"Feature removed: {feature['description']}")
 else:
-    st.sidebar.markdown("No features selected yet.")
+    st.sidebar.info("No features selected yet.")
 
-# User input for other settings
-temperature = st.sidebar.slider("Temperature", 0.0, 1.0, 0.5)
-n_tokens = st.sidebar.number_input("Tokens", value=48, step=1)
-freq_penalty = st.sidebar.number_input("Frequency Penalty", value=2, step=1)
-seed = st.sidebar.number_input("Seed", value=16, step=1)
-strength_multiplier = st.sidebar.number_input("Strength Multiplier", value=4, step=1)
+# Chat Settings
+st.sidebar.markdown("### ⚙️ Chat Settings")
+temperature = st.sidebar.slider("Temperature", 0.0, 1.0, 0.5, help="Adjust the creativity of the responses.")
+n_tokens = st.sidebar.number_input("Max Tokens", value=48, step=1, help="Set the maximum token limit for responses.")
+freq_penalty = st.sidebar.number_input("Frequency Penalty", value=2, step=1, help="Discourage repetitive responses.")
+seed = st.sidebar.number_input("Seed", value=16, step=1, help="Set the random seed for reproducible results.")
+strength_multiplier = st.sidebar.number_input("Strength Multiplier", value=4, step=1, help="Boost selected feature strength.")
 steer_special_tokens = st.sidebar.checkbox("Steer Special Tokens", value=True)
 
-# Chat interface
-st.markdown("### Chat Interface")
-user_input = st.text_input("Your Message:", key="user_input")
-if st.button("Send"):
-    if user_input:
-        # Prepare features for the API payload
-        features = [
-            {
+# Main Chat Interface
+st.markdown("### 💬 Chat Interface")
+col1, col2 = st.columns([2, 1])
+
+with col1:
+    st.markdown("#### Chat Conversation")
+    user_input = st.text_input("Your Message:", key="user_input", placeholder="Type a message...")
+    if st.button("Send 📨"):
+        if user_input:
+            features = [
+                {
+                    "modelId": MODEL_ID,
+                    "layer": feature["layer"],
+                    "index": feature["index"],
+                    "strength": feature["strength"],
+                }
+                for feature in st.session_state.selected_features
+            ]
+            payload = {
+                "defaultChatMessages": [{"role": "user", "content": user_input}],
+                "steeredChatMessages": [{"role": "user", "content": user_input}],
                 "modelId": MODEL_ID,
-                "layer": feature["layer"],
-                "index": feature["index"],
-                "strength": feature["strength"],  # Use slider-adjusted strength
+                "features": features,
+                "temperature": temperature,
+                "n_tokens": n_tokens,
+                "freq_penalty": freq_penalty,
+                "seed": seed,
+                "strength_multiplier": strength_multiplier,
+                "steer_special_tokens": steer_special_tokens,
             }
-            for feature in st.session_state.selected_features
-        ]
+            try:
+                response = requests.post(API_URL, json=payload, headers=HEADERS)
+                response.raise_for_status()
+                data = response.json()
 
-        # Display the selected features and their context
-        st.markdown("### Selected Features (For Steering)")
-        if features:
-            for feature in features:
-                st.markdown(
-                    f"- **Description Context**: `{feature['layer']}:{feature['index']}`<br>"
-                    f"  **Strength**: {feature['strength']}",
-                    unsafe_allow_html=True,
-                )
-        else:
-            st.error("No features selected. Steered response may not be influenced.")
+                # Display responses
+                default_response = data.get("DEFAULT", {}).get("chat_template", [])[-1].get("content", "No response")
+                steered_response = data.get("STEERED", {}).get("chat_template", [])[-1].get("content", "No response")
 
-        # Prepare API payload
-        payload = {
-            "defaultChatMessages": [
-                {"role": "user", "content": user_input}
-            ],
-            "steeredChatMessages": [
-                {"role": "user", "content": user_input}
-            ],
-            "modelId": MODEL_ID,
-            "features": features,
-            "temperature": temperature,
-            "n_tokens": n_tokens,
-            "freq_penalty": freq_penalty,
-            "seed": seed,
-            "strength_multiplier": strength_multiplier,
-            "steer_special_tokens": steer_special_tokens,
-        }
+                st.session_state.default_memory.chat_memory.add_user_message(user_input)
+                st.session_state.default_memory.chat_memory.add_ai_message(default_response)
+                st.session_state.steered_memory.chat_memory.add_user_message(user_input)
+                st.session_state.steered_memory.chat_memory.add_ai_message(steered_response)
 
-        # Display the full payload being sent
-        st.markdown("### Full API Payload")
-        st.json(payload)
-
-        # API Call and response handling
-        try:
-            response = requests.post(API_URL, json=payload, headers=HEADERS)
-            response.raise_for_status()
-            data = response.json()
-
-            # Parse Default and Steered chat templates
-            default_chat = data.get("DEFAULT", {}).get("chat_template", [])
-            steered_chat = data.get("STEERED", {}).get("chat_template", [])
-
-            # Extract the latest model response for default and steered
-            default_response = (
-                default_chat[-1]["content"] if default_chat and default_chat[-1]["role"] == "model" else "No response"
-            )
-            steered_response = (
-                steered_chat[-1]["content"] if steered_chat and steered_chat[-1]["role"] == "model" else "No response"
-            )
-
-            # Ensure user sees the steered response in context of features used
-            st.markdown("### Default Model Response")
-            st.write(default_response)
-
-            st.markdown("### Steered Model Response (Influenced by Features)")
-            if steered_response != "No response" and features:
-                st.write(f"**Steered response generated using features:**")
-                for feature in features:
-                    st.markdown(
-                        f"- **Layer**: `{feature['layer']}`<br>"
-                        f"  **Index**: `{feature['index']}`<br>"
-                        f"  **Strength**: {feature['strength']}",
-                        unsafe_allow_html=True,
-                    )
-                st.write(steered_response)
-            else:
-                st.warning("Steered response does not appear to be influenced by selected features.")
-
-            # Add user input and responses to memory
-            st.session_state.default_memory.chat_memory.add_user_message(user_input)
-            st.session_state.default_memory.chat_memory.add_ai_message(default_response)
-
-            st.session_state.steered_memory.chat_memory.add_user_message(user_input)
-            st.session_state.steered_memory.chat_memory.add_ai_message(steered_response)
-
-        except requests.exceptions.RequestException as e:
-            st.error(f"API request failed: {e}")
-        except (IndexError, TypeError, KeyError) as e:
-            st.error(f"Error parsing API response: {e}")
+            except requests.exceptions.RequestException as e:
+                st.error(f"API request failed: {e}")
 
 # Display Chat History
-col1, col2 = st.columns(2)
-
-# Display Default Model Chat
 with col1:
-    st.subheader("Default Model Chat")
+    st.markdown("#### Chat History")
     for message in st.session_state.default_memory.chat_memory.messages:
         if isinstance(message, HumanMessage):
             st.markdown(f"**👤 User:** {message.content}")
         elif isinstance(message, AIMessage):
             st.markdown(f"**🤖 Default Model:** {message.content}")
 
-# Display Steered Model Chat
 with col2:
-    st.subheader("Steered Model Chat")
+    st.markdown("#### Steered Chat History")
     for message in st.session_state.steered_memory.chat_memory.messages:
         if isinstance(message, HumanMessage):
             st.markdown(f"**👤 User:** {message.content}")
